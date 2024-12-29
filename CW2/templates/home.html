@@ -1,0 +1,38 @@
+<!DOCTYPE html>
+<html lang="en">
+    <head>
+        <meta charset="UTF-8">
+        <title>Trail Explorer</title>
+    </head>
+    <body>
+        <h1>
+            Welcome to Trail Explorer!
+        </h1>
+        {% for trail in trails %}
+        <h2>{{ trail.Trail_name }}</h2>
+        <ul>
+            <li>
+                Summary: {{ trail.Trail_Summary }}
+            </li>
+            <li>
+                Description: {{ trail.Trail_Description }}
+            </li>
+            <li>
+                Difficulty: {{ trail.Difficulty }}
+            </li>
+            <li>
+                Location: {{ trail.Location }}
+            </li>
+            <li>
+                Length: {{ trail.Length }} km
+            </li>
+            <li>
+                Elevation Gain: {{ trail.Elevation_gain }} m
+            </li>
+            <li>
+                Route Type: {{ trail.Route_type }}
+            </li>
+        </ul>
+        {% endfor %}
+    </body>
+</html>

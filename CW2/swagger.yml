@@ -1,0 +1,241 @@
+openapi: 3.0.0
+info:
+  title: Trail Management API
+  description: API for managing trails, location points, and users.
+  version: 1.0.0
+
+servers:
+  - url: "/api"
+
+paths:
+  /trails:
+    get:
+      summary: Get all trails
+      responses:
+        '200':
+          description: List of trails
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Trail'
+    post:
+      summary: Create a new trail
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Trail'
+      responses:
+        '201':
+          description: Trail created successfully
+
+  /trails/{trail_name}:
+    get:
+      summary: Get a single trail by name
+      parameters:
+        - name: trail_name
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Trail details
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Trail'
+        '404':
+          description: Trail not found
+    put:
+      summary: Update a trail by name
+      parameters:
+        - name: trail_name
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Trail'
+      responses:
+        '200':
+          description: Trail updated successfully
+        '404':
+          description: Trail not found
+    delete:
+      summary: Delete a trail by name
+      parameters:
+        - name: trail_name
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Trail deleted successfully
+        '404':
+          description: Trail not found
+
+  /location_points/{location_point_id}:
+    get:
+      summary: Get a location point by ID
+      parameters:
+        - name: location_point_id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: Location point details
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LocationPoint'
+        '404':
+          description: Location point not found
+    put:
+      summary: Update a location point by ID
+      parameters:
+        - name: location_point_id
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/LocationPoint'
+      responses:
+        '200':
+          description: Location point updated successfully
+        '404':
+          description: Location point not found
+
+  /users:
+    get:
+      summary: Get all users
+      responses:
+        '200':
+          description: List of users
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/User'
+    post:
+      summary: Create a new user
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/User'
+      responses:
+        '201':
+          description: User created successfully
+
+  /users/{user_id}:
+    get:
+      summary: Get a single user by ID
+      parameters:
+        - name: user_id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: User details
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/User'
+        '404':
+          description: User not found
+    put:
+      summary: Update a user by ID
+      parameters:
+        - name: user_id
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/User'
+      responses:
+        '200':
+          description: User updated successfully
+        '404':
+          description: User not found
+    delete:
+      summary: Delete a user by ID
+      parameters:
+        - name: user_id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: User deleted successfully
+        '404':
+          description: User not found
+
+components:
+  schemas:
+    Trail:
+      type: object
+      properties:
+        TrailID:
+          type: integer
+        Trail_name:
+          type: string
+        Trail_Summary:
+          type: string
+        Trail_Description:
+          type: string
+        Difficulty:
+          type: string
+        Location:
+          type: string
+        Length:
+          type: number
+        Elevation_gain:
+          type: number
+        Route_type:
+          type: string
+    LocationPoint:
+      type: object
+      properties:
+        Location_Point:
+          type: integer
+        Latitude:
+          type: number
+        Longitude:
+          type: number
+        Description:
+          type: string
+    User:
+      type: object
+      properties:
+        UserID:
+          type: integer
+        Email_address:
+          type: string
+        Role:
+          type: string
