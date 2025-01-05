@@ -2,7 +2,7 @@ from datetime import datetime
 from flask import make_response, abort, request
 from config import db
 from models import Trail, trails_schema, trail_schema
-from models import LocationPoint, location_point_schema, location_points_schema
+from models import LocationPoint, location_point_schema, location_points_schema, TrailLocationPt
 from models import User, user_schema, users_schema
 
 def read_all_trails():
@@ -110,10 +110,43 @@ def get_location(location_point_id):
         abort(404, f"Location point with ID {location_point_id} not found")
 
 def read_all_locations():
-    locations = LocationPoint.query.all()
-    if not locations:
-        abort(404, "No location points found.")
-    return location_points_schema.dump(locations)
+    # Fetch all TrailLocationPt and LocationPoint data
+    trail_location_pts = db.session.query(TrailLocationPt).all()
+
+    # Initialize a dictionary to organize data by TrailID
+    response_data = {}
+
+    for trail_location_pt in trail_location_pts:
+        # Get the associated LocationPoint data
+        location_point = db.session.query(LocationPoint).filter_by(
+            Location_Point=trail_location_pt.Location_Point
+        ).one_or_none()
+
+        if not location_point:
+            continue
+
+        # Add to the response under the appropriate TrailID
+        trail_id = trail_location_pt.TrailID
+        if trail_id not in response_data:
+            response_data[trail_id] = []
+
+        response_data[trail_id].append({
+            "Location_Point": location_point.Location_Point,
+            "Latitude": location_point.Latitude,
+            "Longitude": location_point.Longitude,
+            "Description": location_point.Description,
+            "Order_no": trail_location_pt.Order_no,
+        })
+
+    # Format the response for clarity
+    formatted_response = [
+        {"TrailID": trail_id, "Locations": locations}
+        for trail_id, locations in response_data.items()
+    ]
+
+    return formatted_response
+
+
 
 def update_location(location_point_id, adminID):
     request_data = request.get_json()
