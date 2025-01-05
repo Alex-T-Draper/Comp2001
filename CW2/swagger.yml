@@ -51,6 +51,7 @@ paths:
           required: true
           schema:
             type: string
+          description: Name of trail for details
       responses:
         '200':
           description: Trail details
@@ -69,6 +70,7 @@ paths:
           required: true
           schema:
             type: string
+          description: Name of trail to update
         - name: adminID
           in: query
           required: true
@@ -95,6 +97,7 @@ paths:
           required: true
           schema:
             type: string
+          description: Name of trail to delete
         - name: adminID
           in: query
           required: true
@@ -133,6 +136,7 @@ paths:
           required: true
           schema:
             type: integer
+          description: ID of Location Point to get information
       responses:
         '200':
           description: Location point details
@@ -151,6 +155,7 @@ paths:
           required: true
           schema:
             type: integer
+          description: ID of Location Point to update 
         - name: adminID
           in: query
           required: true
@@ -212,6 +217,7 @@ paths:
           required: true
           schema:
             type: integer
+          description: ID of the user to get
       responses:
         '200':
           description: User details
@@ -230,6 +236,7 @@ paths:
           required: true
           schema:
             type: integer
+          description: ID of the user to update
         - name: adminID
           in: query
           required: true
@@ -256,6 +263,7 @@ paths:
           required: true
           schema:
             type: integer
+          description: ID of the user to delete
         - name: adminID
           in: query
           required: true
