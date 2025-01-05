@@ -5,34 +5,25 @@
         <title>Trail Explorer</title>
     </head>
     <body>
-        <h1>
-            Welcome to Trail Explorer!
-        </h1>
+        <h1>Welcome to Trail Explorer!</h1>
         {% for trail in trails %}
         <h2>{{ trail.Trail_name }}</h2>
         <ul>
-            <li>
-                Summary: {{ trail.Trail_Summary }}
-            </li>
-            <li>
-                Description: {{ trail.Trail_Description }}
-            </li>
-            <li>
-                Difficulty: {{ trail.Difficulty }}
-            </li>
-            <li>
-                Location: {{ trail.Location }}
-            </li>
-            <li>
-                Length: {{ trail.Length }} km
-            </li>
-            <li>
-                Elevation Gain: {{ trail.Elevation_gain }} m
-            </li>
-            <li>
-                Route Type: {{ trail.Route_type }}
-            </li>
+            <li>Summary: {{ trail.Trail_Summary }}</li>
+            <li>Description: {{ trail.Trail_Description }}</li>
+            <li>Difficulty: {{ trail.Difficulty }}</li>
+            <li>Location: {{ trail.Location }}</li>
+            <li>Length: {{ trail.Length }} km</li>
+            <li>Elevation Gain: {{ trail.Elevation_gain }} m</li>
+            <li>Route Type: {{ trail.Route_type }}</li>
         </ul>
         {% endfor %}
+        <hr>
+        <h2>API Endpoints:</h2>
+        <ul>
+            <li><a href="/api/trails">View all trails (JSON)</a></li>
+            <li><a href="/api/users">View all users (JSON)</a></li>
+            <li><a href="/api/locations">View all location points (JSON)</a></li>
+        </ul>
     </body>
 </html>

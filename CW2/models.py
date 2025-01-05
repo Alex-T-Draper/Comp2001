@@ -1,126 +1,170 @@
 from datetime import datetime
-from sqlalchemy import Column, Integer, String, Float, Sequence, ForeignKey, DateTime
-from sqlalchemy.orm import DeclarativeBase, relationship
 import pytz
+from config import db, ma
+from sqlalchemy import CheckConstraint
 
-class Base(DeclarativeBase):
-    pass
+# USER
+class User(db.Model):
+    __tablename__ = 'cw2_user'
+    
+    UserID = db.Column(db.Integer, primary_key=True, autoincrement=True)
+    Email_address = db.Column(db.String(255), nullable=False)
 
-# Trail Table
-class Trail(Base):
-    __tablename__ = 'trail'
+    Role = db.Column(db.String(5), nullable=False)
 
-    TrailID = Column(Integer, Sequence('trail_id_seq'), primary_key=True)
-    Trail_name = Column(String, nullable=False)
-    Trail_Summary = Column(String)
-    Trail_Description = Column(String)
-    Difficulty = Column(String)
-    Location = Column(String)
-    Length = Column(Float)
-    Elevation_gain = Column(Float)
-    Route_type = Column(String)
-    OwnerID = Column(Integer, ForeignKey('user.UserID'))
-    timestamp = Column(
-        DateTime, default=lambda: datetime.now(pytz.timezone('Europe/London')),
+    timestamp = db.Column(
+        db.DateTime,
+        default=lambda: datetime.now(pytz.timezone('Europe/London')),
         onupdate=lambda: datetime.now(pytz.timezone('Europe/London'))
     )
 
-    owner = relationship("User", back_populates="trails")
-    features = relationship("TrailFeature", back_populates="trail")
+    _table_args__ = (
+        CheckConstraint(
+            "Role IN ('admin', 'user')",
+            name="ck_user_role_valid"
+        ),
+    )
 
-class TrailSchema:
-    class Meta:
-        model = Trail
-        load_instance = True
-        include_relationships = True
+# TRAIL
+class Trail(db.Model):
+    __tablename__ = 'cw2_trail'
 
-# Location-Point Table
-class LocationPoint(Base):
-    __tablename__ = 'location_point'
+    TrailID = db.Column(db.Integer, primary_key=True, autoincrement=True)
+    Trail_name = db.Column(db.String(50), nullable=False)
+    Trail_Summary = db.Column(db.String(255))
+    Trail_Description = db.Column(db.String(255))
+    Difficulty = db.Column(db.String(20), nullable=False)
+    Location = db.Column(db.String(50), nullable=False)
+    Length = db.Column((db.Float), nullable=False)
+    Elevation_gain = db.Column((db.Float), nullable=False )
+    Route_type = db.Column(db.String(20), nullable=False)
+    
+    # OwnerID* Numeric (FK to User)
+    OwnerID = db.Column(
+        db.Integer, 
+        db.ForeignKey('cw2_user.UserID', ondelete='CASCADE'), 
+        nullable=False
+    )
+    owner = db.relationship("User", backref="owned_trails")
 
-    Location_Point = Column(Integer, primary_key=True)
-    Latitude = Column(Float, nullable=False)
-    Longitude = Column(Float, nullable=False)
-    Description = Column(String)
-    timestamp = Column(
-        DateTime, default=lambda: datetime.now(pytz.timezone('Europe/London')),
+    timestamp = db.Column(
+        db.DateTime,
+        default=lambda: datetime.now(pytz.timezone('Europe/London')),
         onupdate=lambda: datetime.now(pytz.timezone('Europe/London'))
     )
 
-class LocationPointSchema:
-    class Meta:
-        model = LocationPoint
-        load_instance = True
+# FEATURE
+class Feature(db.Model):
+    __tablename__ = 'cw2_feature'
 
-# Trail-LocationPt Table
-class TrailLocationPt(Base):
-    __tablename__ = 'trail_location_pt'
+    # Trail FeatureID Sequence PK
+    Trail_FeatureID = db.Column(
+        db.Integer, 
+        primary_key=True, 
+        autoincrement=True
+    )
+    
+    # Trail Feature Alphabetic
+    Trail_Feature = db.Column(db.String(100), nullable=False)
 
-    TrailID = Column(Integer, ForeignKey('trail.TrailID'), primary_key=True)
-    Location_Point = Column(Integer, ForeignKey('location_point.Location_Point'), primary_key=True)
-    Order_no = Column(Integer)
+# TRAIL-FEATURE 
+class TrailFeature(db.Model):
+    __tablename__ = 'cw2_trail_feature'
 
-class TrailLocationPtSchema:
-    class Meta:
-        model = TrailLocationPt
-        load_instance = True
+    TrailID = db.Column(
+        db.Integer,
+        db.ForeignKey('cw2_trail.TrailID', ondelete='CASCADE'),
+        primary_key=True
+    )
+    Trail_FeatureID = db.Column(
+        db.Integer,
+        db.ForeignKey('cw2_feature.Trail_FeatureID', ondelete='CASCADE'),
+        primary_key=True
+    )
 
-# Feature Table
-class Feature(Base):
-    __tablename__ = 'feature'
+# LOCATION-POINT
+class LocationPoint(db.Model):
+    __tablename__ = 'cw2_location_point'
 
-    Trail_FeatureID = Column(Integer, Sequence('trail_feature_id_seq'), primary_key=True)
-    Trail_Feature = Column(String, nullable=False)
+    Location_Point = db.Column(db.Integer, primary_key=True, autoincrement=True)
+    Latitude = db.Column(db.Float, nullable=False)
+    Longitude = db.Column(db.Float, nullable=False)
+    Description = db.Column(db.String(255))
 
-class FeatureSchema:
-    class Meta:
-        model = Feature
-        load_instance = True
-
-# Trail-Feature Table
-class TrailFeature(Base):
-    __tablename__ = 'trail_feature'
-
-    TrailID = Column(Integer, ForeignKey('trail.TrailID'), primary_key=True)
-    Trail_FeatureID = Column(Integer, ForeignKey('feature.Trail_FeatureID'), primary_key=True)
-
-    trail = relationship("Trail", back_populates="features")
-    feature = relationship("Feature")
-
-class TrailFeatureSchema:
-    class Meta:
-        model = TrailFeature
-        load_instance = True
-
-# User Table
-class User(Base):
-    __tablename__ = 'user'
-
-    UserID = Column(Integer, Sequence('user_id_seq'), primary_key=True)
-    Email_address = Column(String, nullable=False, unique=True)
-    Role = Column(String)
-    timestamp = Column(
-        DateTime, default=lambda: datetime.now(pytz.timezone('Europe/London')),
+    timestamp = db.Column(
+        db.DateTime,
+        default=lambda: datetime.now(pytz.timezone('Europe/London')),
         onupdate=lambda: datetime.now(pytz.timezone('Europe/London'))
     )
 
-    trails = relationship("Trail", back_populates="owner")
+# TRAIL-LOCATIONPt 
+class TrailLocationPt(db.Model):
+    __tablename__ = 'cw2_trail_location_pt'
 
-class UserSchema:
+    # PK: TrailID Numeric + Location_Point Numeric
+    TrailID = db.Column(
+        db.Integer,
+        db.ForeignKey('cw2_trail.TrailID', ondelete='CASCADE'),
+        primary_key=True
+    )
+    Location_Point = db.Column(
+        db.Integer,
+        db.ForeignKey('cw2_location_point.Location_Point', ondelete='CASCADE'),
+        primary_key=True
+    )
+
+    # Order_no Numeric
+    Order_no = db.Column((db.Integer), nullable=False)
+
+# Schemas
+class UserSchema(ma.SQLAlchemyAutoSchema):
     class Meta:
         model = User
         load_instance = True
-        include_relationships = True
+        sqla_session = db.session
 
+class TrailSchema(ma.SQLAlchemyAutoSchema):
+    class Meta:
+        model = Trail
+        load_instance = True
+        sqla_session = db.session
+
+class FeatureSchema(ma.SQLAlchemyAutoSchema):
+    class Meta:
+        model = Feature
+        load_instance = True
+        sqla_session = db.session
+
+class TrailFeatureSchema(ma.SQLAlchemyAutoSchema):
+    class Meta:
+        model = TrailFeature
+        load_instance = True
+        sqla_session = db.session
+        include_fk = True
+
+class LocationPointSchema(ma.SQLAlchemyAutoSchema):
+    class Meta:
+        model = LocationPoint
+        load_instance = True
+        sqla_session = db.session
+
+class TrailLocationPtSchema(ma.SQLAlchemyAutoSchema):
+    class Meta:
+        model = TrailLocationPt
+        load_instance = True
+        sqla_session = db.session
+        include_fk = True
+
+
+user_schema = UserSchema()
+users_schema = UserSchema(many=True)
 trail_schema = TrailSchema()
 trails_schema = TrailSchema(many=True)
 location_point_schema = LocationPointSchema()
 location_points_schema = LocationPointSchema(many=True)
-trail_location_pt_schema = TrailLocationPtSchema()
-trail_location_pts_schema = TrailLocationPtSchema(many=True)
 feature_schema = FeatureSchema()
 features_schema = FeatureSchema(many=True)
 trail_feature_schema = TrailFeatureSchema()
 trail_features_schema = TrailFeatureSchema(many=True)
-user_schema = UserSchema()
-users_schema = UserSchema(many=True)
+trail_location_pt_schema = TrailLocationPtSchema()
+trail_location_pts_schema = TrailLocationPtSchema(many=True)

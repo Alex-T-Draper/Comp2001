@@ -11,6 +11,7 @@ paths:
   /trails:
     get:
       summary: Get all trails
+      operationId: trails.read_all_trails
       responses:
         '200':
           description: List of trails
@@ -22,12 +23,13 @@ paths:
                   $ref: '#/components/schemas/Trail'
     post:
       summary: Create a new trail
+      operationId: trails.create_trail
       requestBody:
         required: true
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/Trail'
+              $ref: '#/components/schemas/NewTrail'
       responses:
         '201':
           description: Trail created successfully
@@ -35,6 +37,7 @@ paths:
   /trails/{trail_name}:
     get:
       summary: Get a single trail by name
+      operationId: trails.read_one_trail
       parameters:
         - name: trail_name
           in: path
@@ -52,6 +55,7 @@ paths:
           description: Trail not found
     put:
       summary: Update a trail by name
+      operationId: trails.update_trail
       parameters:
         - name: trail_name
           in: path
@@ -71,6 +75,7 @@ paths:
           description: Trail not found
     delete:
       summary: Delete a trail by name
+      operationId: trails.delete_trail
       parameters:
         - name: trail_name
           in: path
@@ -83,9 +88,26 @@ paths:
         '404':
           description: Trail not found
 
+  /locations:
+    get:
+      summary: Get all location points
+      operationId: trails.read_all_locations
+      responses:
+        '200':
+          description: List of location points
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/LocationPoint'
+        '404':
+          description: Location points not found
+
   /location_points/{location_point_id}:
     get:
       summary: Get a location point by ID
+      operationId: trails.get_location
       parameters:
         - name: location_point_id
           in: path
@@ -103,6 +125,7 @@ paths:
           description: Location point not found
     put:
       summary: Update a location point by ID
+      operationId: trails.update_location
       parameters:
         - name: location_point_id
           in: path
@@ -124,6 +147,7 @@ paths:
   /users:
     get:
       summary: Get all users
+      operationId: trails.read_all_users
       responses:
         '200':
           description: List of users
@@ -135,12 +159,13 @@ paths:
                   $ref: '#/components/schemas/User'
     post:
       summary: Create a new user
+      operationId: trails.create_user
       requestBody:
         required: true
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/User'
+              $ref: '#/components/schemas/NewUser'
       responses:
         '201':
           description: User created successfully
@@ -148,6 +173,7 @@ paths:
   /users/{user_id}:
     get:
       summary: Get a single user by ID
+      operationId: trails.read_one_user
       parameters:
         - name: user_id
           in: path
@@ -165,6 +191,7 @@ paths:
           description: User not found
     put:
       summary: Update a user by ID
+      operationId: trails.update_user
       parameters:
         - name: user_id
           in: path
@@ -184,6 +211,7 @@ paths:
           description: User not found
     delete:
       summary: Delete a user by ID
+      operationId: trails.delete_user
       parameters:
         - name: user_id
           in: path
@@ -198,44 +226,111 @@ paths:
 
 components:
   schemas:
+    NewTrail:
+      type: object
+      properties:
+        Trail_name:
+          type: string
+          description: "Name of the trail"
+        Trail_Summary:
+          type: string
+          description: "A short summary of the trail"
+        Trail_Description:
+          type: string
+          description: "A detailed description of the trail"
+        Difficulty:
+          type: string
+          description: "The difficulty level of the trail (e.g., Easy, Moderate, Hard)"
+        Location:
+          type: string
+          description: "The geographical location of the trail"
+        Length:
+          type: number
+          description: "The length of the trail in kilometers"
+        Elevation_gain:
+          type: number
+          description: "The total elevation gain of the trail in meters"
+        Route_type:
+          type: string
+          description: "The type of route (e.g., Loop, Out & Back)"
+        OwnerID:
+          type: integer
+          description: "ID of the user who owns the trail"
+      required:
+        - Trail_name
+        - Difficulty
+        - Location
+        - Length
+        - OwnerID
     Trail:
       type: object
       properties:
         TrailID:
           type: integer
+          description: "Unique identifier for the trail"
         Trail_name:
           type: string
+          description: "Name of the trail"
         Trail_Summary:
           type: string
+          description: "A short summary of the trail"
         Trail_Description:
           type: string
+          description: "A detailed description of the trail"
         Difficulty:
           type: string
+          description: "The difficulty level of the trail (e.g., Easy, Moderate, Hard)"
         Location:
           type: string
+          description: "The geographical location of the trail"
         Length:
           type: number
+          description: "The length of the trail in kilometers"
         Elevation_gain:
           type: number
+          description: "The total elevation gain of the trail in meters"
         Route_type:
           type: string
+          description: "The type of route (e.g., Loop, Out & Back)"
+        OwnerID:
+          type: integer
+          description: "ID of the user who owns the trail"
     LocationPoint:
       type: object
       properties:
         Location_Point:
           type: integer
+          description: "Unique identifier for the location point"
         Latitude:
           type: number
+          description: "The latitude coordinate of the location point"
         Longitude:
           type: number
+          description: "The longitude coordinate of the location point"
         Description:
           type: string
+          description: "A brief description of the location point"
+    NewUser:
+      type: object
+      properties:
+        Email_address:
+          type: string
+          description: "Email address of the user"
+        Role:
+          type: string
+          description: "The role of the user (e.g., admin, user)"
+      required:
+        - Email_address
+        - Role
     User:
       type: object
       properties:
         UserID:
           type: integer
+          description: "Unique identifier for the user"
         Email_address:
           type: string
+          description: "Email address of the user"
         Role:
           type: string
+          description: "The role of the user (e.g., admin, user)"
