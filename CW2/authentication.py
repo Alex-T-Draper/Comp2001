@@ -1,8 +1,8 @@
 import requests
-from models import User, Trail
+from models import User
 from config import db, app
 from sqlalchemy.orm import sessionmaker
-from trails import get_user_role  
+from trails import get_user_role
 
 # Authentication URL
 auth_url = 'https://web.socem.plymouth.ac.uk/COMP2001/auth/api/users'
@@ -30,14 +30,9 @@ with app.app_context():
             # Fetch user from the local database
             local_user = session.query(User).filter(User.Email_address == user['email']).one_or_none()
             if local_user:
-                print(f"Global Role for {user['email']}: {local_user.Role}")
-
-                # Fetch trails and determine roles dynamically
-                trails = session.query(Trail).all()
-                for trail in trails:
-                    role = get_user_role(local_user.UserID, trail.TrailID)
-                    if role:
-                        print(f"Trail '{trail.Trail_name}': Role = {role}")
+                # Fetch and print the user's global role
+                role = get_user_role(local_user.UserID)
+                print(f"Global Role for {user['email']}: {role}")
             else:
                 print(f"User {user['email']} does not exist in the local database.")
         else:

@@ -24,6 +24,13 @@ paths:
     post:
       summary: Create a new trail
       operationId: trails.create_trail
+      parameters:
+        - name: adminID
+          in: query
+          required: true
+          schema:
+            type: integer
+          description: ID of the admin performing this action
       requestBody:
         required: true
         content:
@@ -62,6 +69,12 @@ paths:
           required: true
           schema:
             type: string
+        - name: adminID
+          in: query
+          required: true
+          schema:
+            type: integer
+          description: ID of the admin performing this action
       requestBody:
         required: true
         content:
@@ -82,6 +95,12 @@ paths:
           required: true
           schema:
             type: string
+        - name: adminID
+          in: query
+          required: true
+          schema:
+            type: integer
+          description: ID of the admin performing this action
       responses:
         '200':
           description: Trail deleted successfully
@@ -132,6 +151,12 @@ paths:
           required: true
           schema:
             type: integer
+        - name: adminID
+          in: query
+          required: true
+          schema:
+            type: integer
+          description: ID of the admin performing this action
       requestBody:
         required: true
         content:
@@ -160,6 +185,13 @@ paths:
     post:
       summary: Create a new user
       operationId: trails.create_user
+      parameters:
+        - name: adminID
+          in: query
+          required: true
+          schema:
+            type: integer
+          description: ID of the admin performing this action
       requestBody:
         required: true
         content:
@@ -198,6 +230,12 @@ paths:
           required: true
           schema:
             type: integer
+        - name: adminID
+          in: query
+          required: true
+          schema:
+            type: integer
+          description: ID of the admin performing this action
       requestBody:
         required: true
         content:
@@ -218,6 +256,12 @@ paths:
           required: true
           schema:
             type: integer
+        - name: adminID
+          in: query
+          required: true
+          schema:
+            type: integer
+          description: ID of the admin performing this action
       responses:
         '200':
           description: User deleted successfully
@@ -253,15 +297,11 @@ components:
         Route_type:
           type: string
           description: "The type of route (e.g., Loop, Out & Back)"
-        OwnerID:
-          type: integer
-          description: "ID of the user who owns the trail"
       required:
         - Trail_name
         - Difficulty
         - Location
         - Length
-        - OwnerID
     Trail:
       type: object
       properties:

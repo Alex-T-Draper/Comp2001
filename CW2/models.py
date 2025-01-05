@@ -2,6 +2,7 @@ from datetime import datetime
 import pytz
 from config import db, ma
 from sqlalchemy import CheckConstraint
+from marshmallow import fields
 
 # USER
 class User(db.Model):
@@ -36,7 +37,7 @@ class Trail(db.Model):
     Difficulty = db.Column(db.String(20), nullable=False)
     Location = db.Column(db.String(50), nullable=False)
     Length = db.Column((db.Float), nullable=False)
-    Elevation_gain = db.Column((db.Float), nullable=False )
+    Elevation_gain = db.Column((db.Float), nullable=False)
     Route_type = db.Column(db.String(20), nullable=False)
     
     # OwnerID* Numeric (FK to User)
@@ -45,7 +46,6 @@ class Trail(db.Model):
         db.ForeignKey('cw2_user.UserID', ondelete='CASCADE'), 
         nullable=False
     )
-    owner = db.relationship("User", backref="owned_trails")
 
     timestamp = db.Column(
         db.DateTime,
@@ -128,6 +128,9 @@ class TrailSchema(ma.SQLAlchemyAutoSchema):
         model = Trail
         load_instance = True
         sqla_session = db.session
+        include_relationships = True
+
+    OwnerID = fields.Integer()
 
 class FeatureSchema(ma.SQLAlchemyAutoSchema):
     class Meta:
