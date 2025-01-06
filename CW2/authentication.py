@@ -1,39 +1,48 @@
-import requests
+from flask import request, abort
 from models import User
-from config import db, app
-from sqlalchemy.orm import sessionmaker
-from trails import get_user_role
-
-# Authentication URL
-auth_url = 'https://web.socem.plymouth.ac.uk/COMP2001/auth/api/users'
 
 # List of users to authenticate
-users = [
+password_list = [
     {'email': 'grace@plymouth.ac.uk', 'password': 'ISAD123!'},
     {'email': 'tim@plymouth.ac.uk', 'password': 'COMP2001!'},
     {'email': 'ada@plymouth.ac.uk', 'password': 'insecurePassword'}
 ]
 
-with app.app_context():
-    # Set up a database session
-    Session = sessionmaker(bind=db.engine)
-    session = Session()
+def authenticate_user(username=None, password=None):
+    auth = request.authorization
+    if not auth:
+        print("DEBUG: Missing authorization header.")
+        abort(401, "Authentication required.")
 
-    # Authenticate users and fetch roles
-    for user in users:
-        credentials = {'email': user['email'], 'password': user['password']}
-        response = requests.post(auth_url, json=credentials)
+    email = auth.username or username
+    pwd = auth.password or password
+    print(f"DEBUG: Authenticating user with email: {email}")
 
-        if response.status_code == 200:
-            print(f"Authenticated successfully: {user['email']}")
+    # Validate the password using the predefined list
+    valid_user = next((u for u in password_list if u['email'] == email and u['password'] == pwd), None)
+    if not valid_user:
+        print("DEBUG: Password validation failed.")
+        abort(401, "Invalid credentials.")
 
-            # Fetch user from the local database
-            local_user = session.query(User).filter(User.Email_address == user['email']).one_or_none()
-            if local_user:
-                # Fetch and print the user's global role
-                role = get_user_role(local_user.UserID)
-                print(f"Global Role for {user['email']}: {role}")
-            else:
-                print(f"User {user['email']} does not exist in the local database.")
-        else:
-            print(f"Failed to authenticate user {user['email']} with status code {response.status_code}")
+    # Fetch the user's role and ID from the database
+    user = User.query.filter_by(Email_address=email).one_or_none()
+    if not user:
+        print("DEBUG: User not found in the database.")
+        abort(401, "User not found in the database.")
+
+    print(f"DEBUG: User authenticated successfully with email: {email}, role: {user.Role}, UserID: {user.UserID}")
+    return {"email": user.Email_address, "role": user.Role, "UserID": user.UserID}
+
+
+def check_admin_role(user):
+    if user.get("role") != "admin":
+        abort(403, "Admin privileges required.")
+
+def require_auth_and_role(role="admin"):
+    user = authenticate_user()
+    print(f"DEBUG: Retrieved user: {user}")
+    if role == "admin" and user.get("role") != "admin":
+        print(f"DEBUG: User does not have admin privileges. User role: {user.get('role')}")
+        abort(403, "Admin privileges required.")
+    return user
+

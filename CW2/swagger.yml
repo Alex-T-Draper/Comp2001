@@ -1,7 +1,7 @@
 openapi: 3.0.0
 info:
   title: Trail Management API
-  description: API for managing trails, location points, and users.
+  description: API for managing trails and location points.
   version: 1.0.0
 
 servers:
@@ -24,13 +24,8 @@ paths:
     post:
       summary: Create a new trail
       operationId: trails.create_trail
-      parameters:
-        - name: adminID
-          in: query
-          required: true
-          schema:
-            type: integer
-          description: ID of the admin performing this action
+      security:
+        - BasicAuth: []
       requestBody:
         required: true
         content:
@@ -40,18 +35,22 @@ paths:
       responses:
         '201':
           description: Trail created successfully
+        '401':
+          description: Unauthorized. User needs to log in.
+        '403':
+          description: Forbidden. Only admins can create trails.
 
-  /trails/{trail_name}:
+  /trails/{trail_id}:
     get:
-      summary: Get a single trail by name
+      summary: Get a single trail by ID
       operationId: trails.read_one_trail
       parameters:
-        - name: trail_name
+        - name: trail_id
           in: path
           required: true
           schema:
             type: string
-          description: Name of trail for details
+          description: ID of trail for details
       responses:
         '200':
           description: Trail details
@@ -62,21 +61,17 @@ paths:
         '404':
           description: Trail not found
     put:
-      summary: Update a trail by name
+      summary: Update a trail by ID
       operationId: trails.update_trail
+      security:
+        - BasicAuth: []
       parameters:
-        - name: trail_name
+        - name: trail_id
           in: path
           required: true
           schema:
             type: string
-          description: Name of trail to update
-        - name: adminID
-          in: query
-          required: true
-          schema:
-            type: integer
-          description: ID of the admin performing this action
+          description: ID of trail to update
       requestBody:
         required: true
         content:
@@ -86,27 +81,31 @@ paths:
       responses:
         '200':
           description: Trail updated successfully
+        '401':
+          description: Unauthorized. User needs to log in.
+        '403':
+          description: Forbidden. Only admins can update trails.
         '404':
           description: Trail not found
     delete:
-      summary: Delete a trail by name
+      summary: Delete a trail by ID
       operationId: trails.delete_trail
+      security:
+        - BasicAuth: []
       parameters:
-        - name: trail_name
+        - name: trail_id
           in: path
           required: true
           schema:
             type: string
-          description: Name of trail to delete
-        - name: adminID
-          in: query
-          required: true
-          schema:
-            type: integer
-          description: ID of the admin performing this action
+          description: ID of trail to delete
       responses:
         '200':
           description: Trail deleted successfully
+        '401':
+          description: Unauthorized. User needs to log in.
+        '403':
+          description: Forbidden. Only admins can delete trails.
         '404':
           description: Trail not found
 
@@ -149,19 +148,15 @@ paths:
     put:
       summary: Update a location point by ID
       operationId: trails.update_location
+      security:
+        - BasicAuth: []
       parameters:
         - name: location_point_id
           in: path
           required: true
           schema:
             type: integer
-          description: ID of Location Point to update 
-        - name: adminID
-          in: query
-          required: true
-          schema:
-            type: integer
-          description: ID of the admin performing this action
+          description: ID of Location Point to update
       requestBody:
         required: true
         content:
@@ -171,140 +166,40 @@ paths:
       responses:
         '200':
           description: Location point updated successfully
+        '401':
+          description: Unauthorized. User needs to log in.
+        '403':
+          description: Forbidden. Only admins can update location points.
         '404':
           description: Location point not found
 
-  /users:
-    get:
-      summary: Get all users
-      operationId: trails.read_all_users
-      responses:
-        '200':
-          description: List of users
-          content:
-            application/json:
-              schema:
-                type: array
-                items:
-                  $ref: '#/components/schemas/User'
-    post:
-      summary: Create a new user
-      operationId: trails.create_user
-      parameters:
-        - name: adminID
-          in: query
-          required: true
-          schema:
-            type: integer
-          description: ID of the admin performing this action
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              $ref: '#/components/schemas/NewUser'
-      responses:
-        '201':
-          description: User created successfully
-
-  /users/{user_id}:
-    get:
-      summary: Get a single user by ID
-      operationId: trails.read_one_user
-      parameters:
-        - name: user_id
-          in: path
-          required: true
-          schema:
-            type: integer
-          description: ID of the user to get
-      responses:
-        '200':
-          description: User details
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/User'
-        '404':
-          description: User not found
-    put:
-      summary: Update a user by ID
-      operationId: trails.update_user
-      parameters:
-        - name: user_id
-          in: path
-          required: true
-          schema:
-            type: integer
-          description: ID of the user to update
-        - name: adminID
-          in: query
-          required: true
-          schema:
-            type: integer
-          description: ID of the admin performing this action
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              $ref: '#/components/schemas/User'
-      responses:
-        '200':
-          description: User updated successfully
-        '404':
-          description: User not found
-    delete:
-      summary: Delete a user by ID
-      operationId: trails.delete_user
-      parameters:
-        - name: user_id
-          in: path
-          required: true
-          schema:
-            type: integer
-          description: ID of the user to delete
-        - name: adminID
-          in: query
-          required: true
-          schema:
-            type: integer
-          description: ID of the admin performing this action
-      responses:
-        '200':
-          description: User deleted successfully
-        '404':
-          description: User not found
-
 components:
+  securitySchemes:
+    BasicAuth:
+      type: http
+      scheme: basic
+      x-basicInfoFunc: "authentication.authenticate_user"
+
   schemas:
     NewTrail:
       type: object
       properties:
         Trail_name:
           type: string
-          description: "Name of the trail"
         Trail_Summary:
           type: string
-          description: "A short summary of the trail"
         Trail_Description:
           type: string
-          description: "A detailed description of the trail"
         Difficulty:
           type: string
-          description: "The difficulty level of the trail (e.g., Easy, Moderate, Hard)"
         Location:
           type: string
-          description: "The geographical location of the trail"
         Length:
           type: number
-          description: "The length of the trail in kilometers"
         Elevation_gain:
           type: number
-          description: "The total elevation gain of the trail in meters"
         Route_type:
           type: string
-          description: "The type of route (e.g., Loop, Out & Back)"
       required:
         - Trail_name
         - Difficulty
@@ -315,70 +210,30 @@ components:
       properties:
         TrailID:
           type: integer
-          description: "Unique identifier for the trail"
         Trail_name:
           type: string
-          description: "Name of the trail"
         Trail_Summary:
           type: string
-          description: "A short summary of the trail"
         Trail_Description:
           type: string
-          description: "A detailed description of the trail"
         Difficulty:
           type: string
-          description: "The difficulty level of the trail (e.g., Easy, Moderate, Hard)"
         Location:
           type: string
-          description: "The geographical location of the trail"
         Length:
           type: number
-          description: "The length of the trail in kilometers"
         Elevation_gain:
           type: number
-          description: "The total elevation gain of the trail in meters"
         Route_type:
           type: string
-          description: "The type of route (e.g., Loop, Out & Back)"
-        OwnerID:
-          type: integer
-          description: "ID of the user who owns the trail"
     LocationPoint:
       type: object
       properties:
         Location_Point:
           type: integer
-          description: "Unique identifier for the location point"
         Latitude:
           type: number
-          description: "The latitude coordinate of the location point"
         Longitude:
           type: number
-          description: "The longitude coordinate of the location point"
         Description:
           type: string
-          description: "A brief description of the location point"
-    NewUser:
-      type: object
-      properties:
-        Email_address:
-          type: string
-          description: "Email address of the user"
-        Role:
-          type: string
-          description: "The role of the user (e.g., admin, user)"
-      required:
-        - Email_address
-        - Role
-    User:
-      type: object
-      properties:
-        UserID:
-          type: integer
-          description: "Unique identifier for the user"
-        Email_address:
-          type: string
-          description: "Email address of the user"
-        Role:
-          type: string
-          description: "The role of the user (e.g., admin, user)"
