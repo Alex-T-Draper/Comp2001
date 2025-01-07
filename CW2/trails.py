@@ -218,32 +218,53 @@ def get_point_locations_for_trail(trail_id):
     # Return the location points as JSON
     return location_points_schema.dump(trail_location_points)
 
-def update_location_point(location_point_id):
+def update_location_point(trail_id, location_point_id):
     require_auth_and_role("admin")
     request_data = request.get_json()
-    print("DEBUG: Raw request data:", request_data)
 
     # Fetch the existing location point
     existing_location_point = LocationPoint.query.filter(LocationPoint.Location_Point == location_point_id).one_or_none()
     if not existing_location_point:
         abort(404, f"Location point with ID {location_point_id} not found.")
 
-    # Fetch neighboring points
+    # Fetch its trail-location relationship
     trail_location = TrailLocationPt.query.filter_by(Location_Point=location_point_id).one_or_none()
     if not trail_location:
         abort(404, "Location point is not associated with any trail.")
 
     trail_id = trail_location.TrailID
-    order_no = trail_location.Order_no
+    current_order_no = trail_location.Order_no
 
+    # Get new latitude, longitude, and order number
+    new_lat = request_data.get("Latitude", existing_location_point.Latitude)
+    new_lon = request_data.get("Longitude", existing_location_point.Longitude)
+    new_order_no = request_data.get("Order_no", current_order_no)
+    max_order_no = db.session.query(db.func.max(TrailLocationPt.Order_no)).filter_by(TrailID=trail_id).scalar() or 0
+
+    # Check if the coordinates already exist in the trail (excluding the current point)
+    duplicate_point = db.session.query(LocationPoint.Location_Point).join(TrailLocationPt).filter(
+        TrailLocationPt.TrailID == trail_id,
+        LocationPoint.Latitude == new_lat,
+        LocationPoint.Longitude == new_lon,
+        LocationPoint.Location_Point != location_point_id
+    ).first()
+    if duplicate_point:
+        abort(400, f"A location point with the same coordinates already exists in trail ID {trail_id}.")
+
+    # Validate the new order number if it changes
+    if new_order_no != current_order_no:
+        if new_order_no < 1 or new_order_no > max_order_no:
+            abort(400, f"Order_no must be between 1 and {max_order_no}.")
+
+    # Fetch neighboring points for distance validation
     prev_point = db.session.query(LocationPoint).join(TrailLocationPt).filter(
         TrailLocationPt.TrailID == trail_id,
-        TrailLocationPt.Order_no == order_no - 1
+        TrailLocationPt.Order_no == (new_order_no - 1)
     ).one_or_none()
 
     next_point = db.session.query(LocationPoint).join(TrailLocationPt).filter(
         TrailLocationPt.TrailID == trail_id,
-        TrailLocationPt.Order_no == order_no + 1
+        TrailLocationPt.Order_no == (new_order_no + 1)
     ).one_or_none()
 
     MAX_DISTANCE = 10.0
@@ -252,8 +273,7 @@ def update_location_point(location_point_id):
     if prev_point:
         distance = calculate_distance(
             prev_point.Latitude, prev_point.Longitude,
-            request_data.get("Latitude", existing_location_point.Latitude),
-            request_data.get("Longitude", existing_location_point.Longitude)
+            new_lat, new_lon
         )
         if distance > MAX_DISTANCE:
             abort(400, f"Distance to previous point exceeds {MAX_DISTANCE} km.")
@@ -261,16 +281,32 @@ def update_location_point(location_point_id):
     # Validate distance to next point
     if next_point:
         distance = calculate_distance(
-            request_data.get("Latitude", existing_location_point.Latitude),
-            request_data.get("Longitude", existing_location_point.Longitude),
+            new_lat, new_lon,
             next_point.Latitude, next_point.Longitude
         )
         if distance > MAX_DISTANCE:
             abort(400, f"Distance to next point exceeds {MAX_DISTANCE} km.")
 
-    # Update location point
-    existing_location_point.Latitude = request_data.get("Latitude", existing_location_point.Latitude)
-    existing_location_point.Longitude = request_data.get("Longitude", existing_location_point.Longitude)
+    # Adjust order numbers if necessary
+    if new_order_no != current_order_no:
+        if new_order_no > current_order_no:
+            db.session.query(TrailLocationPt).filter(
+                TrailLocationPt.TrailID == trail_id,
+                TrailLocationPt.Order_no > current_order_no,
+                TrailLocationPt.Order_no <= new_order_no
+            ).update({"Order_no": TrailLocationPt.Order_no - 1}, synchronize_session=False)
+        elif new_order_no < current_order_no:
+            db.session.query(TrailLocationPt).filter(
+                TrailLocationPt.TrailID == trail_id,
+                TrailLocationPt.Order_no >= new_order_no,
+                TrailLocationPt.Order_no < current_order_no
+            ).update({"Order_no": TrailLocationPt.Order_no + 1}, synchronize_session=False)
+
+        trail_location.Order_no = new_order_no
+
+    # Update the location point details
+    existing_location_point.Latitude = new_lat
+    existing_location_point.Longitude = new_lon
     existing_location_point.Description = request_data.get("Description", existing_location_point.Description)
     existing_location_point.timestamp = datetime.now()
 
@@ -281,9 +317,6 @@ def update_location_point(location_point_id):
 def add_location_point_to_trail(trail_id):
     require_auth_and_role("admin")
 
-    if not isinstance(trail_id, int) or trail_id <= 0:
-        abort(400, description="trail_id must be a positive integer.")
-        
     # Fetch the trail
     trail = Trail.query.filter(Trail.TrailID == trail_id).one_or_none()
     if not trail:
@@ -301,20 +334,63 @@ def add_location_point_to_trail(trail_id):
 
     new_lat = request_data["Latitude"]
     new_lon = request_data["Longitude"]
+    order_no = request_data.get("Order_no")  # Fetch order number, default to None if not provided
 
-    # Fetch the last location point in the trail
-    last_point = db.session.query(LocationPoint).join(TrailLocationPt).filter(
-        TrailLocationPt.TrailID == trail_id
-    ).order_by(TrailLocationPt.Order_no.desc()).first()
+    # Check if the coordinates already exist in the trail
+    duplicate_point = db.session.query(LocationPoint.Location_Point).join(TrailLocationPt).filter(
+        TrailLocationPt.TrailID == trail_id,
+        LocationPoint.Latitude == new_lat,
+        LocationPoint.Longitude == new_lon
+    ).first()
+    if duplicate_point:
+        abort(400, f"A location point with the same coordinates already exists in trail ID {trail_id}.")
 
-    if last_point:
-        # Calculate distance to the new point
+    # Determine the maximum existing order number
+    max_order_no = db.session.query(db.func.max(TrailLocationPt.Order_no)).filter_by(TrailID=trail_id).scalar() or 0
+
+    if order_no:
+        # Check if the order number is already in use
+        existing_order = db.session.query(TrailLocationPt.Order_no).filter_by(TrailID=trail_id, Order_no=order_no).scalar()
+        if existing_order:
+            abort(400, f"Order_no {order_no} is already in use for trail ID {trail_id}.")
+        # Adjust order numbers for insertion
+        db.session.query(TrailLocationPt).filter(
+            TrailLocationPt.TrailID == trail_id, TrailLocationPt.Order_no >= order_no
+        ).update({"Order_no": TrailLocationPt.Order_no + 1}, synchronize_session=False)
+    else:
+        # Default order_no to the next available position
+        order_no = max_order_no + 1
+
+    # Fetch neighboring points for validation
+    prev_point = db.session.query(LocationPoint).join(TrailLocationPt).filter(
+        TrailLocationPt.TrailID == trail_id,
+        TrailLocationPt.Order_no == (order_no - 1)
+    ).one_or_none()
+
+    next_point = db.session.query(LocationPoint).join(TrailLocationPt).filter(
+        TrailLocationPt.TrailID == trail_id,
+        TrailLocationPt.Order_no == order_no
+    ).one_or_none()
+
+    MAX_DISTANCE = 10.0
+
+    # Validate distance to previous point
+    if prev_point:
         distance = calculate_distance(
-            last_point.Latitude, last_point.Longitude, new_lat, new_lon
+            prev_point.Latitude, prev_point.Longitude,
+            new_lat, new_lon
         )
-        MAX_DISTANCE = 10.0 
         if distance > MAX_DISTANCE:
-            abort(400, f"New location point is too far from the last point ({distance:.2f} km). Maximum allowed is {MAX_DISTANCE} km.")
+            abort(400, f"Distance to previous point exceeds {MAX_DISTANCE} km.")
+
+    # Validate distance to next point
+    if next_point:
+        distance = calculate_distance(
+            new_lat, new_lon,
+            next_point.Latitude, next_point.Longitude
+        )
+        if distance > MAX_DISTANCE:
+            abort(400, f"Distance to next point exceeds {MAX_DISTANCE} km.")
 
     # Create the new location point
     new_location = LocationPoint(
@@ -326,20 +402,24 @@ def add_location_point_to_trail(trail_id):
     db.session.add(new_location)
     db.session.flush()
 
-    # Establish the relationship with the trail
-    max_order_no = db.session.query(db.func.max(TrailLocationPt.Order_no)).filter_by(TrailID=trail_id).scalar() or 0
+    # Create the trail-location relationship
     new_trail_location_pt = TrailLocationPt(
         TrailID=trail_id,
         Location_Point=new_location.Location_Point,
-        Order_no=max_order_no + 1,
+        Order_no=order_no,
     )
     db.session.add(new_trail_location_pt)
     db.session.commit()
 
     return location_point_schema.dump(new_location), 201
 
-def delete_location_point_from_trail(location_point_id):
+def delete_location_point_from_trail(trail_id, location_point_id):
     require_auth_and_role("admin")
+
+    # Check if the trail exists
+    trail = Trail.query.filter(Trail.TrailID == trail_id).one_or_none()
+    if not trail:
+        abort(404, f"Trail with ID {trail_id} not found.")
 
     # Fetch the location point relationship
     trail_location_pt = TrailLocationPt.query.filter_by(Location_Point=location_point_id).one_or_none()
@@ -360,9 +440,28 @@ def delete_location_point_from_trail(location_point_id):
     if location_point:
         db.session.delete(location_point)
 
+    remaining_points = TrailLocationPt.query.filter_by(TrailID=trail_id).order_by(TrailLocationPt.Order_no).all()
+    for index, point in enumerate(remaining_points):
+        point.Order_no = index + 1
+
     db.session.commit()
 
     return make_response(f"Location point with ID {location_point_id} successfully deleted from trail {trail_id}", 200)
+
+def get_features_for_trail(trail_id):
+    # Check if the trail exists
+    trail = Trail.query.filter(Trail.TrailID == trail_id).one_or_none()
+    if not trail:
+        abort(404, f"Trail with ID {trail_id} not found.")
+
+    # Fetch the features associated with the trail
+    features = db.session.query(Feature).join(TrailFeature).filter(
+        TrailFeature.TrailID == trail_id
+    ).all()
+
+    # Return the features as JSON
+    return [{"FeatureID": feature.Trail_FeatureID, "Feature": feature.Trail_Feature} for feature in features], 200
+
 
 def add_feature_to_trail(trail_id):
     require_auth_and_role("admin")
@@ -406,8 +505,12 @@ def add_feature_to_trail(trail_id):
 
     return make_response(f"Feature '{feature_name}' successfully added to trail {trail.Trail_name}", 201)
 
-def update_feature(feature_id):
+def update_feature(trail_id, feature_id):
     require_auth_and_role("admin")
+
+    trail = Trail.query.filter(Trail.TrailID == trail_id).one_or_none()
+    if not trail:
+        abort(404, f"Trail with ID {trail_id} not found.")
 
     # Check if the feature exists
     feature = Feature.query.filter(Feature.Trail_FeatureID == feature_id).one_or_none()
@@ -464,8 +567,6 @@ def delete_feature_from_trail(trail_id, feature_id):
     db.session.commit()
 
     return make_response(f"Feature '{feature.Trail_Feature}' successfully deleted from trail {trail.Trail_name}", 200)
-
-
 
 def calculate_distance(lat1, lon1, lat2, lon2):
     R = 6371.0  # Earth radius in kilometers
