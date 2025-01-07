@@ -21,6 +21,9 @@ paths:
                 type: array
                 items:
                   $ref: '#/components/schemas/Trail'
+        '404':
+          description: No trails found
+          
     post:
       summary: Create a new trail
       operationId: trails.create_trail
@@ -39,6 +42,44 @@ paths:
           description: Unauthorized. User needs to log in.
         '403':
           description: Forbidden. Only admins can create trails.
+
+  /trails/{trail_id}/admin:
+    get:
+      summary: View comprehensive details of a trail (Admin only)
+      operationId: trails.read_trail_admin
+      security:
+        - BasicAuth: []
+      parameters:
+        - name: trail_id
+          in: path
+          required: true
+          schema:
+            type: integer
+          description: ID of the trail
+      responses:
+        '200':
+          description: Comprehensive trail details
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  Trail:
+                    $ref: '#/components/schemas/Trail'
+                  OwnerID:
+                    type: integer
+                  Features:
+                    type: array
+                    items:
+                      type: string
+                  LocationPoints:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/LocationPoint'
+        '401':
+          description: Unauthorized. Admin access required.
+        '404':
+          description: Trail not found
 
   /trails/{trail_id}:
     get:
@@ -108,11 +149,222 @@ paths:
           description: Forbidden. Only admins can delete trails.
         '404':
           description: Trail not found
+    
+  /trails/{trail_id}/location_points:
+    get:
+      summary: Get all location points for a specific trail
+      operationId: trails.get_point_locations_for_trail
+      parameters:
+        - name: trail_id
+          in: path
+          required: true
+          schema:
+            type: integer
+          description: ID of the trail
+      responses:
+        '200':
+          description: List of location points for the trail
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/LocationPoint'
+        '404':
+          description: Trail not found
+    post:
+      summary: Add a location point to an existing trail
+      operationId: trails.add_location_point_to_trail
+      security:
+        - BasicAuth: []
+      parameters:
+        - name: trail_id
+          in: path
+          required: true
+          schema:
+            type: integer
+          description: ID of the trail
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                Latitude:
+                  type: number
+                Longitude:
+                  type: number
+                Description:
+                  type: string
+              required:
+                - Latitude
+                - Longitude
+                - Description
+      responses:
+        '201':
+          description: Location point added successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LocationPoint'
+        '400':
+          description: Bad request or missing required fields
+        '401':
+          description: Unauthorized
+        '404':
+          description: Trail not found
+  
+  /trails/{trail_id}/location_points/{location_point_id}:
+    put:
+      summary: Update a location point within a trail
+      operationId: trails.update_location_point
+      security:
+        - BasicAuth: []
+      parameters:
+        - name: trail_id
+          in: path
+          required: true
+          schema:
+            type: integer
+        - name: location_point_id
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                Latitude:
+                  type: number
+                Longitude:
+                  type: number
+                Description:
+                  type: string
+      responses:
+        '200':
+          description: Location point updated successfully
+    delete:
+      summary: Delete a location point from a trail
+      operationId: trails.delete_location_point_from_trail
+      security:
+        - BasicAuth: []
+      parameters:
+        - name: trail_id
+          in: path
+          required: true
+          schema:
+            type: integer
+        - name: location_point_id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: Location point deleted successfully
 
-  /locations:
+  /trails/{trail_id}/features:
+    post:
+      summary: Add a feature to a trail
+      operationId: trails.add_feature_to_trail
+      security:
+        - BasicAuth: []
+      parameters:
+        - name: trail_id
+          in: path
+          required: true
+          schema:
+            type: integer
+          description: ID of the trail
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                Trail_Feature:
+                  type: string
+              required:
+                - Trail_Feature
+      responses:
+        '201':
+          description: Feature added successfully
+        '400':
+          description: Bad request or feature already exists for trail
+        '401':
+          description: Unauthorized. Only admins can add features.
+        '404':
+          description: Trail not found
+    put:
+      summary: Update a feature
+      operationId: trails.update_feature
+      security:
+        - BasicAuth: []
+      parameters:
+        - name: feature_id
+          in: path
+          required: true
+          schema:
+            type: integer
+          description: ID of the feature to update
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                Trail_Feature:
+                  type: string
+              required:
+                - Trail_Feature
+      responses:
+        '200':
+          description: Feature updated successfully
+        '400':
+          description: Feature name already exists or bad request
+        '401':
+          description: Unauthorized. Only admins can update features.
+        '404':
+          description: Feature not found
+    delete:
+      summary: Delete a feature from a trail
+      operationId: trails.delete_feature_from_trail
+      security:
+        - BasicAuth: []
+      parameters:
+        - name: trail_id
+          in: path
+          required: true
+          schema:
+            type: integer
+          description: ID of the trail
+        - name: feature_id
+          in: path
+          required: true
+          schema:
+            type: integer
+          description: ID of the feature to delete
+      responses:
+        '200':
+          description: Feature deleted successfully
+        '400':
+          description: Bad request or feature not associated with the trail
+        '401':
+          description: Unauthorized. Only admins can delete features.
+        '404':
+          description: Trail or feature not found
+
+  /location_points:
     get:
       summary: Get all location points
-      operationId: trails.read_all_locations
+      operationId: trails.read_all_location_points
       responses:
         '200':
           description: List of location points
@@ -128,7 +380,7 @@ paths:
   /location_points/{location_point_id}:
     get:
       summary: Get a location point by ID
-      operationId: trails.get_location
+      operationId: trails.get_location_points
       parameters:
         - name: location_point_id
           in: path
@@ -145,33 +397,6 @@ paths:
                 $ref: '#/components/schemas/LocationPoint'
         '404':
           description: Location point not found
-    put:
-      summary: Update a location point by ID
-      operationId: trails.update_location
-      security:
-        - BasicAuth: []
-      parameters:
-        - name: location_point_id
-          in: path
-          required: true
-          schema:
-            type: integer
-          description: ID of Location Point to update
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              $ref: '#/components/schemas/LocationPoint'
-      responses:
-        '200':
-          description: Location point updated successfully
-        '401':
-          description: Unauthorized. User needs to log in.
-        '403':
-          description: Forbidden. Only admins can update location points.
-        '404':
-          description: Location point not found
 
 components:
   securitySchemes:
@@ -186,25 +411,51 @@ components:
       properties:
         Trail_name:
           type: string
+          maxLength: 100
+          minLength: 3
         Trail_Summary:
           type: string
+          maxLength: 255
         Trail_Description:
           type: string
+          maxLength: 255
         Difficulty:
           type: string
+          enum: [Easy, Moderate, Hard]
+          default: Easy
         Location:
           type: string
+          maxLength: 100
         Length:
           type: number
+          minimum: 0
         Elevation_gain:
           type: number
+          minimum: 0
         Route_type:
           type: string
+        LocationPoints:
+          type: array
+          items:
+            type: object
+            properties:
+              Latitude:
+                type: number
+                minimum: -90
+                maximum: 90
+              Longitude:
+                type: number
+                minimum: -180
+                maximum: 180
+              Description:
+                type: string
       required:
         - Trail_name
         - Difficulty
         - Location
         - Length
+        - LocationPoints
+
     Trail:
       type: object
       properties:
@@ -222,18 +473,60 @@ components:
           type: string
         Length:
           type: number
+          minimum: 0
         Elevation_gain:
           type: number
+          minimum: 0
         Route_type:
           type: string
+
+    TrailDetails:
+      type: object
+      properties:
+        Trail:
+          $ref: '#/components/schemas/Trail'
+        OwnerID:
+          type: integer
+        Features:
+          type: array
+          items:
+            $ref: '#/components/schemas/Feature'
+        LocationPoints:
+          type: array
+          items:
+            $ref: '#/components/schemas/LocationPoint'
+
     LocationPoint:
       type: object
       properties:
         Location_Point:
           type: integer
+        Order_no:
+          type: integer
         Latitude:
           type: number
+          minimum: -90
+          maximum: 90
         Longitude:
           type: number
+          minimum: -180
+          maximum: 180
         Description:
           type: string
+        timestamp:
+          type: string
+          format: date-time
+      required:
+        - Location_Point
+        - Latitude
+        - Longitude
+
+    Feature:
+      type: object
+      properties:
+        FeatureID:
+          type: integer
+        Trail_Feature:
+          type: string
+      required:
+        - Trail_Feature
