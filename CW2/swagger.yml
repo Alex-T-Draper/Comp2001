@@ -143,7 +143,7 @@ paths:
   
   /trails/{trail_id}/location_points/{location_point_id}:
     post:
-      summary: Add a location point to an existing trail
+      summary: Add an existing location point to a trail
       operationId: trails.add_location_point_to_trail
       security:
         - BasicAuth: []
