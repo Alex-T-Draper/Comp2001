@@ -1,56 +1,79 @@
 from datetime import datetime
+from math import radians, cos, sin, sqrt, atan2
 from flask import make_response, abort, request
 from config import db
-from models import Trail, trails_schema, trail_schema
-from models import LocationPoint, location_point_schema, location_points_schema, TrailLocationPt, Feature, TrailFeature
+from models import (
+    Trail, trails_schema, trail_schema,
+    LocationPoint, location_point_schema, location_points_schema,
+    TrailLocationPt, Feature, TrailFeature, feature_schema
+)
 from authentication import require_auth_and_role
-from math import radians, cos, sin, sqrt, atan2
 
-def read_all_trails():
+def get_all_trails():
     trails = Trail.query.all()
     if not trails:
         abort(404, "No trails found")
     return trails_schema.dump(trails)
 
-def read_trail_admin(trail_id):
-    require_auth_and_role("admin")
+def get_all_trails_with_details():
+    trails = Trail.query.all()
+    if not trails:
+        abort(404, "No trails found")
 
-    # Check if the trail exists
-    trail = Trail.query.filter(Trail.TrailID == trail_id).one_or_none()
-    if not trail:
-        abort(404, f"Trail with ID {trail_id} not found.")
+    all_trails_with_details = []
 
-    # Fetch associated features
-    features = db.session.query(Feature).join(TrailFeature).filter(
-        TrailFeature.TrailID == trail_id
-    ).all()
+    for trail in trails:
+        # Fetch associated features
+        features = db.session.query(Feature).join(TrailFeature).filter(
+            TrailFeature.TrailID == trail.TrailID
+        ).all()
 
-    # Fetch associated location points with order numbers
-    location_points = db.session.query(LocationPoint, TrailLocationPt.Order_no).join(
-        TrailLocationPt, TrailLocationPt.Location_Point == LocationPoint.Location_Point
-    ).filter(TrailLocationPt.TrailID == trail_id).order_by(TrailLocationPt.Order_no).all()
+        # Fetch associated location points with order numbers
+        location_points = db.session.query(LocationPoint, TrailLocationPt.Order_no).join(
+            TrailLocationPt, TrailLocationPt.Location_Point == LocationPoint.Location_Point
+        ).filter(TrailLocationPt.TrailID == trail.TrailID).order_by(TrailLocationPt.Order_no).all()
 
-    # Format location points to include order number
-    formatted_location_points = [
-        {
-            "Location_Point": lp.Location_Point,
-            "Latitude": lp.Latitude,
-            "Longitude": lp.Longitude,
-            "Description": lp.Description,
-            "Order_no": order_no,
-            "timestamp": lp.timestamp
+        # Format location points 
+        formatted_location_points = [
+            {
+                "Location_Point": lp.Location_Point, 
+                "Latitude": lp.Latitude,
+                "Longitude": lp.Longitude,
+                "Description": lp.Description,
+                "Order_no": order_no,
+                "timestamp": lp.timestamp
+            }
+            for lp, order_no in location_points
+        ]
+
+        # Format features 
+        formatted_features = [
+            {
+                "Trail_FeatureID": feature.Trail_FeatureID,  
+                "Trail_Feature": feature.Trail_Feature
+            }
+            for feature in features
+        ]
+
+        # Format the trail details
+        formatted_trail = {
+            "TrailID": trail.TrailID,
+            "Trail_name": trail.Trail_name,
+            "Trail_Summary": trail.Trail_Summary,
+            "Trail_Description": trail.Trail_Description,
+            "Difficulty": trail.Difficulty,
+            "Location": trail.Location,
+            "Length": trail.Length,
+            "Elevation_gain": trail.Elevation_gain,
+            "Route_type": trail.Route_type,
+            "Features": formatted_features,  
+            "LocationPoints": formatted_location_points,  
+            "timestamp": trail.timestamp
         }
-        for lp, order_no in location_points
-    ]
 
-    # Format the response
-    response = {
-        "Trail": trail_schema.dump(trail),
-        "OwnerID": trail.OwnerID,
-        "Features": [feature.Trail_Feature for feature in features],
-        "LocationPoints": formatted_location_points
-    }
-    return response
+        all_trails_with_details.append(formatted_trail)
+
+    return all_trails_with_details
 
 def create_trail():
     user = require_auth_and_role("admin")
@@ -65,10 +88,7 @@ def create_trail():
         abort(400, "No data provided or invalid format.")
 
     # Validate required fields
-    if len(trail_data["Trail_name"]) < 3 or len(trail_data["Trail_name"]) > 100:
-        abort(400, "Trail_name must be between 3 and 100 characters.")
-
-    required_fields = ["Trail_name", "Location", "Difficulty", "Length", "LocationPoints"]
+    required_fields = ["Trail_name", "Location", "Difficulty", "Length"]
     for field in required_fields:
         if not trail_data.get(field):
             abort(400, f"Missing required field: {field}")
@@ -79,14 +99,12 @@ def create_trail():
     if existing_trail:
         abort(406, f"Trail with name {trail_name} already exists.")
 
-    # Validate and process LocationPoints
-    location_points = trail_data.get("LocationPoints")
-    if not isinstance(location_points, list) or len(location_points) == 0:
-        abort(400, "At least one LocationPoint is required.")
+    # Extract and validate LocationPoints separately
+    location_points = trail_data.pop("LocationPoints", [])
+    if not isinstance(location_points, list):
+        abort(400, "LocationPoints must be a list.")
 
-    MAX_DISTANCE = 10.0  # Maximum allowed distance in kilometers
-
-    # Validate distances between consecutive location points
+    MAX_DISTANCE = 10.0
     for i in range(1, len(location_points)):
         prev = location_points[i - 1]
         curr = location_points[i]
@@ -104,7 +122,7 @@ def create_trail():
     db.session.add(new_trail)
     db.session.flush()  # Get the TrailID for relationships
 
-    # Add LocationPoints and establish relationships
+    # Add LocationPoints
     for i, loc_data in enumerate(location_points):
         new_location = LocationPoint(
             Latitude=loc_data["Latitude"],
@@ -123,10 +141,9 @@ def create_trail():
         db.session.add(new_trail_location_pt)
 
     db.session.commit()
-
     return trail_schema.dump(new_trail), 201
 
-def read_one_trail(trail_id):
+def get_one_trail(trail_id):
     trail = Trail.query.filter(Trail.TrailID == trail_id).one_or_none()
     if trail is not None:
         return trail_schema.dump(trail)
@@ -155,6 +172,19 @@ def delete_trail(trail_id):
     if not existing_trail:
         abort(404, f"Trail with ID {trail_id} not found.")
 
+    # Delete associated TrailFeature entries
+    TrailFeature.query.filter_by(TrailID=trail_id).delete()
+
+    # Delete associated TrailLocationPt entries
+    trail_location_pts = TrailLocationPt.query.filter_by(TrailID=trail_id).all()
+    for trail_location_pt in trail_location_pts:
+        location_point = LocationPoint.query.filter(LocationPoint.Location_Point == trail_location_pt.Location_Point).one_or_none()
+        if location_point:
+            # Check if the location point is linked to other trails
+            linked_trails_count = TrailLocationPt.query.filter_by(Location_Point=location_point.Location_Point).count()
+            if linked_trails_count == 1:
+                db.session.delete(location_point)
+
     db.session.delete(existing_trail)
     db.session.commit()
     return make_response(f"Trail with ID {trail_id} successfully deleted", 200)
@@ -167,11 +197,50 @@ def get_location_points(location_point_id):
     else:
         abort(404, f"Location point with ID {location_point_id} not found")
 
-def read_all_location_points():
+def get_all_features():
+    # Fetch all features from the database
+    features = Feature.query.all()
+    if not features:
+        return {"message": "No features found in the database."}, 200
+    
+    # Serialize and return features
+    return [{"FeatureID": feature.Trail_FeatureID, "Feature": feature.Trail_Feature} for feature in features], 200
+
+def get_feature_by_id(feature_id):
+    # Fetch the feature with the given ID
+    feature = Feature.query.filter(Feature.Trail_FeatureID == feature_id).one_or_none()
+    if not feature:
+        abort(404, f"Feature with ID {feature_id} not found.")
+    
+    # Serialize and return the feature
+    return {"FeatureID": feature.Trail_FeatureID, "Feature": feature.Trail_Feature}, 200
+
+def delete_feature_by_id(feature_id):
+    require_auth_and_role("admin")
+
+    # Fetch the feature with the given ID
+    feature = Feature.query.filter(Feature.Trail_FeatureID == feature_id).one_or_none()
+    if not feature:
+        abort(404, f"Feature with ID {feature_id} not found.")
+
+    # Delete all associations in TrailFeature
+    TrailFeature.query.filter_by(Trail_FeatureID=feature_id).delete()
+
+    # Delete the feature itself
+    db.session.delete(feature)
+    db.session.commit()
+
+    return make_response(f"Feature with ID {feature_id} and its associations successfully deleted.", 200)
+
+def get_all_location_points():
     # Fetch all TrailLocationPt and LocationPoint data
     trail_location_pts = db.session.query(TrailLocationPt).all()
 
-    # Initialize a dictionary to organize data by TrailID
+    # Check if no location points exist
+    if not trail_location_pts:
+        return {"message": "No location points found in the database."}, 200
+
+    # Initialize a dictionary to organise data by TrailID
     response_data = {}
     
     for trail_location_pt in trail_location_pts:
@@ -463,7 +532,7 @@ def get_features_for_trail(trail_id):
     return [{"FeatureID": feature.Trail_FeatureID, "Feature": feature.Trail_Feature} for feature in features], 200
 
 
-def add_feature_to_trail(trail_id):
+def add_feature_to_trail(trail_id, feature_id):
     require_auth_and_role("admin")
 
     # Check if the trail exists
@@ -471,31 +540,19 @@ def add_feature_to_trail(trail_id):
     if not trail:
         abort(404, f"Trail with ID {trail_id} not found.")
 
-    # Parse request data
-    request_data = request.get_json()
-    feature_name = request_data.get("Trail_Feature")
-    if not feature_name:
-        abort(400, "Feature name is required.")
+    # Check if the feature exists
+    feature = Feature.query.filter(Feature.Trail_FeatureID == feature_id).one_or_none()
+    if not feature:
+        abort(404, f"Feature with ID {feature_id} not found.")
 
-    # Check if the feature already exists
-    existing_feature = Feature.query.filter_by(Trail_Feature=feature_name).one_or_none()
-    if not existing_feature:
-        # Create the feature if it doesn't exist
-        new_feature = Feature(Trail_Feature=feature_name)
-        db.session.add(new_feature)
-        db.session.flush()  # Generate Trail_FeatureID
-        feature_id = new_feature.Trail_FeatureID
-    else:
-        feature_id = existing_feature.Trail_FeatureID
-
-    # Link the feature to the trail in the TrailFeature table
+    # Check if the feature is already associated with the trail
     existing_trail_feature = TrailFeature.query.filter_by(
         TrailID=trail_id, Trail_FeatureID=feature_id
     ).one_or_none()
-
     if existing_trail_feature:
-        abort(400, f"Feature '{feature_name}' is already associated with this trail.")
+        abort(400, f"Feature '{feature.Trail_Feature}' is already associated with this trail.")
 
+    # Link the feature to the trail
     new_trail_feature = TrailFeature(
         TrailID=trail_id,
         Trail_FeatureID=feature_id
@@ -503,14 +560,28 @@ def add_feature_to_trail(trail_id):
     db.session.add(new_trail_feature)
     db.session.commit()
 
-    return make_response(f"Feature '{feature_name}' successfully added to trail {trail.Trail_name}", 201)
+    return make_response(
+        f"Feature '{feature.Trail_Feature}' successfully added to trail {trail.Trail_name}", 201
+    )
 
-def update_feature(trail_id, feature_id):
+def add_new_feature():
+    request_data = request.get_json()
+    feature_name = request_data.get("Trail_Feature")
+    if not feature_name:
+        abort(400, "Feature name is required.")
+
+    existing_feature = Feature.query.filter_by(Trail_Feature=feature_name).one_or_none()
+    if existing_feature:
+        abort(400, "Feature already exists.")
+
+    new_feature = Feature(Trail_Feature=feature_name)
+    db.session.add(new_feature)
+    db.session.commit()
+
+    return feature_schema.dump(new_feature), 201
+
+def update_feature(feature_id):
     require_auth_and_role("admin")
-
-    trail = Trail.query.filter(Trail.TrailID == trail_id).one_or_none()
-    if not trail:
-        abort(404, f"Trail with ID {trail_id} not found.")
 
     # Check if the feature exists
     feature = Feature.query.filter(Feature.Trail_FeatureID == feature_id).one_or_none()
@@ -534,7 +605,6 @@ def update_feature(trail_id, feature_id):
 
     return make_response(f"Feature successfully updated to '{new_feature_name}'", 200)
 
-
 def delete_feature_from_trail(trail_id, feature_id):
     require_auth_and_role("admin")
 
@@ -555,18 +625,11 @@ def delete_feature_from_trail(trail_id, feature_id):
     if not trail_feature:
         abort(404, f"Feature '{feature.Trail_Feature}' is not associated with trail {trail.Trail_name}.")
 
-    # Remove the association
+    # Remove the association without deleting the feature
     db.session.delete(trail_feature)
-
-    # Check if the feature is linked to other trails
-    linked_trails_count = TrailFeature.query.filter_by(Trail_FeatureID=feature_id).count()
-    if linked_trails_count == 0:
-        # If no other trails use this feature, delete the feature
-        db.session.delete(feature)
-
     db.session.commit()
 
-    return make_response(f"Feature '{feature.Trail_Feature}' successfully deleted from trail {trail.Trail_name}", 200)
+    return make_response(f"Feature '{feature.Trail_Feature}' successfully removed from trail {trail.Trail_name}", 200)
 
 def calculate_distance(lat1, lon1, lat2, lon2):
     R = 6371.0  # Earth radius in kilometers

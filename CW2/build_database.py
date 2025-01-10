@@ -52,6 +52,7 @@ USERS_TRAILS = [
 
 with app.app_context():
     db.drop_all()
+    print("Tables dropped successfully!")
     db.create_all()
     print("Tables created successfully!")
 

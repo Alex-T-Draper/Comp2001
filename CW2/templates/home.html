@@ -21,7 +21,7 @@
         {% if trail.Features and trail.Features|length > 0 %}
         <ul>
             {% for feature in trail.Features %}
-            <li>{{ feature }}</li>
+            <li>{{ feature.Trail_Feature }}</li>
             {% endfor %}
         </ul>
         {% else %}

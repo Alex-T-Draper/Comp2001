@@ -47,6 +47,18 @@ class Trail(db.Model):
         nullable=False
     )
 
+    features = db.relationship(
+        'TrailFeature',
+        backref='trail',
+        cascade="all, delete-orphan"
+    )
+
+    location_points = db.relationship(
+        'TrailLocationPt',
+        backref='trail',
+        cascade="all, delete-orphan"
+    )
+
     timestamp = db.Column(
         db.DateTime,
         default=lambda: datetime.now(pytz.timezone('Europe/London')),
@@ -64,8 +76,13 @@ class Feature(db.Model):
         autoincrement=True
     )
     
-    # Trail Feature Alphabetic
     Trail_Feature = db.Column(db.String(100), nullable=False)
+
+    trail_features = db.relationship(
+        'TrailFeature',
+        backref='feature',
+        cascade="all, delete-orphan"
+    )
 
 # TRAIL-FEATURE 
 class TrailFeature(db.Model):
@@ -97,6 +114,16 @@ class LocationPoint(db.Model):
         onupdate=lambda: datetime.now(pytz.timezone('Europe/London'))
     )
 
+    trail_location_pts = db.relationship(
+        'TrailLocationPt',
+        backref='location_point',
+        cascade="all, delete-orphan"
+    )
+
+    __table_args__ = (
+        db.UniqueConstraint('Latitude', 'Longitude', name='unique_lat_lon'),
+    )
+
 # TRAIL-LOCATIONPt 
 class TrailLocationPt(db.Model):
     __tablename__ = 'cw2_trail_location_pt'
@@ -107,6 +134,7 @@ class TrailLocationPt(db.Model):
         db.ForeignKey('cw2_trail.TrailID', ondelete='CASCADE'),
         primary_key=True
     )
+    
     Location_Point = db.Column(
         db.Integer,
         db.ForeignKey('cw2_location_point.Location_Point', ondelete='CASCADE'),
@@ -128,10 +156,7 @@ class TrailSchema(ma.SQLAlchemyAutoSchema):
         model = Trail
         load_instance = True
         sqla_session = db.session
-        include_relationships = True
-
-    OwnerID = fields.Integer()
-
+        
 class FeatureSchema(ma.SQLAlchemyAutoSchema):
     class Meta:
         model = Feature
@@ -157,7 +182,6 @@ class TrailLocationPtSchema(ma.SQLAlchemyAutoSchema):
         load_instance = True
         sqla_session = db.session
         include_fk = True
-
 
 user_schema = UserSchema()
 users_schema = UserSchema(many=True)
