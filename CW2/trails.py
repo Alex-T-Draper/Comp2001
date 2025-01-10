@@ -66,6 +66,7 @@ def get_all_trails(details=False):
             "Length": trail.Length,
             "Elevation_gain": trail.Elevation_gain,
             "Route_type": trail.Route_type,
+            "OwnerID": trail.OwnerID,
             "Features": formatted_features,
             "LocationPoints": formatted_location_points,
             "timestamp": trail.timestamp
@@ -93,21 +94,97 @@ def create_trail():
         if not trail_data.get(field):
             abort(400, f"Missing required field: {field}")
 
+    location_points = trail_data.pop("LocationPoints", [])
+    if not location_points or len(location_points) == 0:
+        abort(400, "At least one location point is required.")
+
     # Check for duplicate trail name
     trail_name = trail_data.get("Trail_name")
     existing_trail = Trail.query.filter(Trail.Trail_name == trail_name).one_or_none()
     if existing_trail:
         abort(406, f"Trail with name {trail_name} already exists.")
 
-    # Assign the owner of the trail
-    trail_data["OwnerID"] = user["UserID"]
-
-    # Create the trail (location points will be added later)
+    # Create the trail object (without OwnerID)
     new_trail = trail_schema.load(trail_data, session=db.session)
+
+    # Assign the owner to the trail
+    new_trail.OwnerID = user["UserID"]
+
+    # Add the trail to the session
     db.session.add(new_trail)
+    db.session.flush()
+
+    # Handle LocationPoints and check distances
+    MAX_DISTANCE = 10.0
+    location_point_details = []
+    for index, loc in enumerate(location_points):
+        latitude = loc.get("Latitude")
+        longitude = loc.get("Longitude")
+        description = loc.get("Description")
+
+        if latitude is None or longitude is None or description is None:
+            abort(400, "Each location point must have Latitude, Longitude, and Description.")
+
+        # Check if the location point already exists
+        existing_point = LocationPoint.query.filter_by(Latitude=latitude, Longitude=longitude).one_or_none()
+        if existing_point:
+            location_point_id = existing_point.Location_Point
+        else:
+            # Validate distances with all existing points in the trail
+            for existing_loc in location_point_details:
+                distance = calculate_distance(
+                    latitude, longitude,
+                    existing_loc["Latitude"], existing_loc["Longitude"]
+                )
+                if distance > MAX_DISTANCE:
+                    abort(400, {
+                        "detail": f"Location point exceeds the maximum distance of {MAX_DISTANCE} km from another point.",
+                        "from": {
+                            "Latitude": existing_loc["Latitude"],
+                            "Longitude": existing_loc["Longitude"]
+                        },
+                        "to": {
+                            "Latitude": latitude,
+                            "Longitude": longitude
+                        },
+                        "distance_km": round(distance, 2)
+                    })
+
+            # Create a new location point
+            new_location_point = LocationPoint(
+                Latitude=latitude,
+                Longitude=longitude,
+                Description=description,
+                timestamp=datetime.now()
+            )
+            db.session.add(new_location_point)
+            db.session.flush()  # Get the new location point ID
+            location_point_id = new_location_point.Location_Point
+
+        # Add the location point to the trail
+        new_trail_location = TrailLocationPt(
+            TrailID=new_trail.TrailID,
+            Location_Point=location_point_id,
+            Order_no=index + 1
+        )
+        db.session.add(new_trail_location)
+
+        # Append details for the response
+        location_point_details.append({
+            "Location_Point": location_point_id,
+            "Latitude": latitude,
+            "Longitude": longitude,
+            "Description": description,
+            "Order_no": index + 1
+        })
+
     db.session.commit()
 
-    return trail_schema.dump(new_trail), 201
+    # Construct enhanced response
+    response_data = trail_schema.dump(new_trail)
+    response_data["LocationPoints"] = location_point_details
+
+    return response_data, 201
 
 def get_one_trail(trail_id):
     trail = Trail.query.filter(Trail.TrailID == trail_id).one_or_none()

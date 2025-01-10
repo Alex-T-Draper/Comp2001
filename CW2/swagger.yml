@@ -32,6 +32,9 @@ paths:
           description: No trails found
     post:
       summary: Create a new trail
+      description: >
+        Create a new trail. At least one valid location point is required in the 
+        LocationPoints array. Only admins can create trails.
       operationId: trails.create_trail
       security:
         - BasicAuth: []
@@ -44,6 +47,12 @@ paths:
       responses:
         '201':
           description: Trail created successfully
+        '400':
+          description: >
+            Bad request. Possible reasons:
+            - Missing required fields.
+            - No location points provided.
+            - Invalid format for location points.
         '401':
           description: Unauthorized. User needs to log in.
         '403':
@@ -621,6 +630,11 @@ components:
           minimum: 0
         Route_type:
           type: string
+        LocationPoints:
+          type: array
+          items:
+            $ref: '#/components/schemas/LocationPointRequestBody'
+          description: A list of location points for the trail. At least one point is required.
       required:
         - Trail_name
         - Difficulty
