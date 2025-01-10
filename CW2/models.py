@@ -144,6 +144,10 @@ class TrailLocationPt(db.Model):
     # Order_no Numeric
     Order_no = db.Column((db.Integer), nullable=False)
 
+    __table_args__ = (
+        CheckConstraint('Order_no >= 1', name='ck_order_no_positive'),
+    )
+
 # Schemas
 class UserSchema(ma.SQLAlchemyAutoSchema):
     class Meta:

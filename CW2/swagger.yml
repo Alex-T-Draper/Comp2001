@@ -12,6 +12,13 @@ paths:
     get:
       summary: Get all trails
       operationId: trails.get_all_trails
+      parameters:
+        - name: details
+          in: query
+          required: false
+          schema:
+            type: boolean
+          description: Include detailed trail information (features and location points). Defaults to `false`.
       responses:
         '200':
           description: List of trails
@@ -20,7 +27,7 @@ paths:
               schema:
                 type: array
                 items:
-                  $ref: '#/components/schemas/Trail'
+                  $ref: '#/components/schemas/TrailDetails'
         '404':
           description: No trails found
     post:
@@ -42,23 +49,6 @@ paths:
         '403':
           description: Forbidden. Only admins can create trails.
 
-  /trails/details:
-    get:
-      summary: Get all trails with detailed information
-      description: Retrieve all trails with associated features and location points in a formatted response.
-      operationId: trails.get_all_trails_with_details
-      responses:
-        '200':
-          description: A list of trails with detailed information.
-          content:
-            application/json:
-              schema:
-                type: array
-                items:
-                  $ref: '#/components/schemas/TrailDetails'
-        '404':
-          description: No trails found.
-          
   /trails/{trail_id}:
     get:
       summary: Get a single trail by ID
@@ -150,6 +140,8 @@ paths:
                   $ref: '#/components/schemas/LocationPoint'
         '404':
           description: Trail not found
+  
+  /trails/{trail_id}/location_points/{location_point_id}:
     post:
       summary: Add a location point to an existing trail
       operationId: trails.add_location_point_to_trail
@@ -162,12 +154,18 @@ paths:
           schema:
             type: integer
           description: ID of the trail
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              $ref: '#/components/schemas/LocationPointRequestBody'              
+        - name: location_point_id
+          in: path
+          required: true
+          schema:
+            type: integer
+          description: ID of the location point   
+        - name: Order_no
+          in: query
+          required: false
+          schema:
+            type: integer
+          description: Position of the location point in the trail sequence. Defaults to the next available position.     
       responses:
         '201':
           description: Location point added successfully
@@ -185,11 +183,9 @@ paths:
           description: Unauthorized
         '404':
           description: Trail not found
-  
-  /trails/{trail_id}/location_points/{location_point_id}:
     put:
-      summary: Update a location point within a trail
-      operationId: trails.update_location_point
+      summary: Update the order number of a location point within a trail
+      operationId: trails.update_trail_location_point
       security:
         - BasicAuth: []
       parameters:
@@ -210,20 +206,24 @@ paths:
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/LocationPointRequestBody'
+              type: object
+              properties:
+                Order_no:
+                  type: integer
+                  description: New order number for the location point.
+              required:
+                - Order_no
       responses:
         '200':
-          description: Location point updated successfully
+          description: Order number updated successfully
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/LocationPoint'
         '400':
-          description:  |
+          description: |
             Invalid input. Possible reasons include:
             - Order_no out of range
-            - Latitude or Longitude outside valid range
-            - MAX_DISTANCE exceeded
         '401':
           description: Unauthorized
         '404':
@@ -459,11 +459,37 @@ paths:
                   $ref: '#/components/schemas/LocationPoint'
         '404':
           description: Location points not found
+    post:
+      summary: Add a new location point
+      operationId: trails.add_location_point
+      security:
+        - BasicAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/LocationPointRequestBody'
+      responses:
+        '201':
+          description: Location point added successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LocationPoint'
+        '200':
+          description: Location point already exists
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LocationPoint'
+        '400':
+          description: Bad request
 
   /location_points/{location_point_id}:
     get:
       summary: Get a location point by ID
-      operationId: trails.get_location_points
+      operationId: trails.get_location_point
       parameters:
         - name: location_point_id
           in: path
@@ -478,6 +504,84 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/LocationPoint'
+        '404':
+          description: Location point not found
+    put:
+      summary: Update an existing location point
+      operationId: trails.update_location_point
+      security:
+        - BasicAuth: []
+      parameters:
+        - name: location_point_id
+          in: path
+          required: true
+          schema:
+            type: integer
+          description: ID of the location point to update
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                Latitude:
+                  type: number
+                  description: Updated latitude
+                  minimum: -90
+                  maximum: 90
+                Longitude:
+                  type: number
+                  description: Updated longitude
+                  minimum: -180
+                  maximum: 180
+                Description:
+                  type: string
+                  description: Updated description of the location point
+      responses:
+        '200':
+          description: Location point updated successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LocationPoint'
+        '400':
+          description: |
+            Invalid input. Possible reasons include:
+            - Distance to another point exceeds 10 km
+        '401':
+          description: Unauthorized
+        '404':
+          description: Location point not found
+    delete:
+      summary: Delete a location point
+      operationId: trails.delete_location_point
+      security:
+        - BasicAuth: []
+      parameters:
+        - name: location_point_id
+          in: path
+          required: true
+          schema:
+            type: integer
+          description: ID of the location point to delete
+      responses:
+        '200':
+          description: Location point deleted successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    description: Confirmation message
+        '400':
+          description: |
+            Invalid input. Possible reasons include:
+            - Location point is still associated with a trail
+        '401':
+          description: Unauthorized
         '404':
           description: Location point not found
 
@@ -517,16 +621,11 @@ components:
           minimum: 0
         Route_type:
           type: string
-        LocationPoints:
-          type: array
-          items:
-            $ref: '#/components/schemas/LocationPointRequestBody'
       required:
         - Trail_name
         - Difficulty
         - Location
         - Length
-        - LocationPoints
 
     Trail:
       type: object
@@ -603,8 +702,6 @@ components:
       properties:
         Location_Point:
           type: integer
-        Order_no:
-          type: integer
         Latitude:
           type: number
         Longitude:
@@ -635,12 +732,6 @@ components:
         Description:
           type: string
           description: Description of the location point
-        Order_no:
-          type: integer
-          description: |
-            (Optional) Position of the point in the trail sequence.
-            If not provided, it defaults to the next available position.
-          minimum: 1
       required:
         - Latitude
         - Longitude
