@@ -1,7 +1,7 @@
 openapi: 3.0.0
 info:
   title: Trail Management API
-  description: API for managing trails and location points.
+  description: API for managing trails, features and location points.
   version: 1.0.0
 
 servers:

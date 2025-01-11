@@ -194,7 +194,10 @@ def get_one_trail(trail_id):
         abort(404, f"Trail with ID {trail_id} not found")
 
 def update_trail(trail_id):
-    require_auth_and_role("admin")
+    user = require_auth_and_role("admin")  
+    if not user:
+        abort(403, "Unable to authenticate user.")
+
     trail_data = request.get_json()
 
     # Fetch the existing trail
@@ -210,7 +213,10 @@ def update_trail(trail_id):
     return trail_schema.dump(existing_trail), 200
 
 def delete_trail(trail_id):
-    require_auth_and_role("admin")
+    user = require_auth_and_role("admin")  
+    if not user:
+        abort(403, "Unable to authenticate user.")
+
     existing_trail = Trail.query.filter(Trail.TrailID == trail_id).one_or_none()
     if not existing_trail:
         abort(404, f"Trail with ID {trail_id} not found.")
@@ -259,7 +265,9 @@ def get_feature_by_id(feature_id):
     return {"FeatureID": feature.Trail_FeatureID, "Feature": feature.Trail_Feature}, 200
 
 def delete_feature_by_id(feature_id):
-    require_auth_and_role("admin")
+    user = require_auth_and_role("admin")  
+    if not user:
+        abort(403, "Unable to authenticate user.")
 
     # Fetch the feature with the given ID
     feature = Feature.query.filter(Feature.Trail_FeatureID == feature_id).one_or_none()
@@ -287,7 +295,9 @@ def get_all_location_points():
     return location_points_schema.dump(location_points)
 
 def update_location_point(location_point_id):
-    require_auth_and_role("admin")  # Ensure only admin users can update location points
+    user = require_auth_and_role("admin")  
+    if not user:
+        abort(403, "Unable to authenticate user.")
 
     # Fetch the existing location point
     location_point = LocationPoint.query.filter(LocationPoint.Location_Point == location_point_id).one_or_none()
@@ -359,7 +369,9 @@ def get_point_locations_for_trail(trail_id):
     return location_points_schema.dump(trail_location_points)
 
 def add_location_point():
-    require_auth_and_role("admin")  # Ensure only admin users can add a location point
+    user = require_auth_and_role("admin")  
+    if not user:
+        abort(403, "Unable to authenticate user.")
 
     # Parse request data
     request_data = request.get_json()
@@ -395,7 +407,9 @@ def add_location_point():
     return location_point_schema.dump(new_point), 201
 
 def delete_location_point(location_point_id):
-    require_auth_and_role("admin")  # Ensure only admin users can delete location points
+    user = require_auth_and_role("admin")  
+    if not user:
+        abort(403, "Unable to authenticate user.")
 
     # Fetch the location point
     location_point = LocationPoint.query.filter(LocationPoint.Location_Point == location_point_id).one_or_none()
@@ -415,7 +429,9 @@ def delete_location_point(location_point_id):
 
 
 def update_trail_location_point(trail_id, location_point_id):
-    require_auth_and_role("admin")  # Ensure only admin users can update the order
+    user = require_auth_and_role("admin")  
+    if not user:
+        abort(403, "Unable to authenticate user.")
 
     # Fetch the trail
     trail = Trail.query.filter(Trail.TrailID == trail_id).one_or_none()
@@ -463,7 +479,9 @@ def update_trail_location_point(trail_id, location_point_id):
     return location_point_schema.dump(LocationPoint.query.get(location_point_id)), 200
 
 def add_location_point_to_trail(trail_id, location_point_id):
-    require_auth_and_role("admin")  # Ensure only admin users can add location points to trails
+    user = require_auth_and_role("admin")  
+    if not user:
+        abort(403, "Unable to authenticate user.")
 
     # Fetch the trail
     trail = Trail.query.filter(Trail.TrailID == trail_id).one_or_none()
@@ -529,7 +547,9 @@ def add_location_point_to_trail(trail_id, location_point_id):
     return location_point_schema.dump(location_point), 201
 
 def delete_location_point_from_trail(trail_id, location_point_id):
-    require_auth_and_role("admin")
+    user = require_auth_and_role("admin")  
+    if not user:
+        abort(403, "Unable to authenticate user.")
 
     # Check if the trail exists
     trail = Trail.query.filter(Trail.TrailID == trail_id).one_or_none()
@@ -575,7 +595,9 @@ def get_features_for_trail(trail_id):
     return [{"FeatureID": feature.Trail_FeatureID, "Feature": feature.Trail_Feature} for feature in features], 200
 
 def add_feature_to_trail(trail_id, feature_id):
-    require_auth_and_role("admin")
+    user = require_auth_and_role("admin")  
+    if not user:
+        abort(403, "Unable to authenticate user.")
 
     # Check if the trail exists
     trail = Trail.query.filter(Trail.TrailID == trail_id).one_or_none()
@@ -607,6 +629,10 @@ def add_feature_to_trail(trail_id, feature_id):
     )
 
 def add_new_feature():
+    user = require_auth_and_role("admin")  
+    if not user:
+        abort(403, "Unable to authenticate user.")
+
     request_data = request.get_json()
     feature_name = request_data.get("Trail_Feature")
     if not feature_name:
@@ -623,7 +649,9 @@ def add_new_feature():
     return feature_schema.dump(new_feature), 201
 
 def update_feature(feature_id):
-    require_auth_and_role("admin")
+    user = require_auth_and_role("admin")  
+    if not user:
+        abort(403, "Unable to authenticate user.")
 
     # Check if the feature exists
     feature = Feature.query.filter(Feature.Trail_FeatureID == feature_id).one_or_none()
@@ -648,7 +676,9 @@ def update_feature(feature_id):
     return make_response(f"Feature successfully updated to '{new_feature_name}'", 200)
 
 def delete_feature_from_trail(trail_id, feature_id):
-    require_auth_and_role("admin")
+    user = require_auth_and_role("admin")  
+    if not user:
+        abort(403, "Unable to authenticate user.")
 
     # Check if the trail exists
     trail = Trail.query.filter(Trail.TrailID == trail_id).one_or_none()

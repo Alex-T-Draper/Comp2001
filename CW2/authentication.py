@@ -33,11 +33,6 @@ def authenticate_user(username=None, password=None):
     print(f"DEBUG: User authenticated successfully with email: {email}, role: {user.Role}, UserID: {user.UserID}")
     return {"email": user.Email_address, "role": user.Role, "UserID": user.UserID}
 
-
-def check_admin_role(user):
-    if user.get("role") != "admin":
-        abort(403, "Admin privileges required.")
-
 def require_auth_and_role(role="admin"):
     user = authenticate_user()
     print(f"DEBUG: Retrieved user: {user}")
