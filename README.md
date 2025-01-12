@@ -46,7 +46,7 @@ This project is a microservice designed for managing trails, features, and locat
    ```
 
 2. Set up the database:
-   - Use the provided `build_database.py` script to initialize the database schema and populate sample data.
+   - Use the provided `build_database.py` script to initialise the database schema and populate sample data.
    ```bash
    python build_database.py
    ```
