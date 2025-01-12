@@ -1,8 +1,6 @@
 from flask import render_template
 import config
-from models import Trail
-from config import db
-from trails import get_all_trails  # Import the method
+from trails import get_all_trails  
 
 config.connex_app.add_api(config.basedir / "swagger.yml")
 

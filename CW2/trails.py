@@ -5,7 +5,7 @@ from config import db
 from models import (
     Trail, trails_schema, trail_schema,
     LocationPoint, location_point_schema, location_points_schema,
-    TrailLocationPt, Feature, TrailFeature, feature_schema
+    TrailLocationPt, trail_location_pt_schema, Feature, TrailFeature, feature_schema
 )
 from authentication import require_auth_and_role
 
@@ -476,7 +476,7 @@ def update_trail_location_point(trail_id, location_point_id):
 
     db.session.commit()
 
-    return location_point_schema.dump(LocationPoint.query.get(location_point_id)), 200
+    return trail_location_pt_schema.dump(trail_location), 200
 
 def add_location_point_to_trail(trail_id, location_point_id):
     user = require_auth_and_role("admin")  
