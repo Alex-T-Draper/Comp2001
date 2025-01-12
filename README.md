@@ -108,18 +108,20 @@ Refer to the `swagger.yml` file for more detailed endpoint descriptions and data
 
 ### Directory Structure
 ```
-├── app.py
-├── authentication.py
-├── build_database.py
-├── config.py
-├── models.py
-├── trails.py
-├── swagger.yml
-├── docker-compose.yml
-├── Dockerfile
-├── templates/
-│   └── home.html
-└── requirements.txt
+├── CW2/
+│   ├── app.py
+│   ├── authentication.py
+│   ├── build_database.py
+│   ├── config.py
+│   ├── models.py
+│   ├── trails.py
+│   ├── swagger.yml
+│   ├── docker-compose.yml
+│   ├── Dockerfile
+│   ├── templates/
+│   │   └── home.html
+│   ├── requirements.txt
+├── README.md
 ```
 
 ## Testing
