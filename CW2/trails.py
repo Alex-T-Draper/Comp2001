@@ -10,37 +10,35 @@ from models import (
 from authentication import require_auth, require_auth_and_role
 
 def get_all_trails():
-    # Check if the 'details' parameter is passed
-    details_param = request.args.get('details', 'false').lower() in ('true', '1')
-
     # Fetch all trails
     trails = Trail.query.all()
     if not trails:
         abort(404, "No trails found")
 
-    # If 'details=false' or not set, return basic trail information
-    if not details_param:
-        return [
-            {
-                "Trail_name": trail.Trail_name,
-                "Trail_Summary": trail.Trail_Summary,
-                "Trail_Description": trail.Trail_Description,
-                "Difficulty": trail.Difficulty,
-                "Location": trail.Location,
-                "Length": trail.Length,
-                "Elevation_gain": trail.Elevation_gain,
-                "Route_type": trail.Route_type,
-            }
+    # Return basic trail information
+    return [
+        {
+            "Trail_name": trail.Trail_name,
+            "Trail_Summary": trail.Trail_Summary,
+            "Trail_Description": trail.Trail_Description,
+            "Difficulty": trail.Difficulty,
+            "Location": trail.Location,
+            "Length": trail.Length,
+            "Elevation_gain": trail.Elevation_gain,
+            "Route_type": trail.Route_type,
+        }
         for trail in trails
     ]
 
-    # Try to authenticate the user
-    try:
-        user = require_auth()
-    except:
-        abort(401, "Authentication required for detailed view.")
+def get_all_trails_details():
+    user = require_auth()
+    if not user:
+        abort(401, "Authentication required.")
 
-    # If authenticated, return full details
+    trails = Trail.query.all()
+    if not trails:
+        abort(404, "No trails found")
+
     all_trails_with_details = []
 
     for trail in trails:

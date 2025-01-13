@@ -11,25 +11,17 @@ paths:
   /trails:
     get:
       summary: Get all trails
+      description: Retrieve basic trail information.
       operationId: trails.get_all_trails
-      parameters:
-        - name: details
-          in: query
-          required: false
-          schema:
-            type: boolean
-          description: Include detailed trail information (features and location points). Defaults to `false`.
       responses:
         '200':
           description: List of trails
           content:
             application/json:
               schema:
-                oneOf:
-                  - $ref: '#/components/schemas/BasicTrailList'
-                  - $ref: '#/components/schemas/TrailDetailsList'
-        '401':
-          description: User not authenticated for detailed view
+                type: array
+                items:
+                  $ref: '#/components/schemas/BasicTrail'
         '404':
           description: No trails found
     post:
@@ -59,6 +51,25 @@ paths:
           description: Unauthorized. User needs to log in.
         '403':
           description: Forbidden. Only admins can create trails.
+
+  /trails/details:
+    get:
+      summary: Get all trails details
+      description: Retrieve detailed trail information, including features and location points. This endpoint requires authentication.
+      operationId: trails.get_all_trails_details
+      security:
+        - BasicAuth: []
+      responses:
+        '200':
+          description: List of trails
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TrailDetails'
+        '401':
+          description: User not authenticated for detailed view
+        '404':
+          description: No trails found
 
   /trails/{trail_id}:
     get:
@@ -798,12 +809,3 @@ components:
           type: string
       required:
         - Trail_Feature
-
-    BasicTrailList:
-      type: array
-      items:
-        $ref: '#/components/schemas/BasicTrail'
-    TrailDetailsList:
-      type: array
-      items:
-        $ref: '#/components/schemas/TrailDetails'
