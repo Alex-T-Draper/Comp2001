@@ -7,16 +7,24 @@ from models import (
     LocationPoint, location_point_schema, location_points_schema,
     TrailLocationPt, trail_location_pt_schema, Feature, TrailFeature, feature_schema
 )
-from authentication import require_auth_and_role
+from authentication import require_auth, require_auth_and_role
 
-def get_all_trails(details=False):
+def get_all_trails():
+    details_param = request.args.get('details', 'false').lower() in ('true', '1')
+
+    # If 'details=true', then enforce authentication
+    if details_param:
+        user = require_auth() # Need to be user or admin for detailed view
+        if not user:
+            abort(401, "Authentication required for detailed view.")
+
     # Fetch all trails
     trails = Trail.query.all()
     if not trails:
         abort(404, "No trails found")
 
     # If details are not requested, return basic trail information
-    if not details:
+    if not details_param:
         return trails_schema.dump(trails)
 
     # Fetch detailed trail information
@@ -239,6 +247,10 @@ def delete_trail(trail_id):
     return make_response(f"Trail with ID {trail_id} successfully deleted", 200)
 
 def get_location_point(location_point_id):
+    user = require_auth()
+    if not user:
+        abort(401, "Authentication required.")
+
     location_point = LocationPoint.query.filter(LocationPoint.Location_Point == location_point_id).one_or_none()
 
     if location_point is not None:
@@ -247,6 +259,10 @@ def get_location_point(location_point_id):
         abort(404, f"Location point with ID {location_point_id} not found")
 
 def get_all_features():
+    user = require_auth()
+    if not user:
+        abort(401, "Authentication required.")
+
     # Fetch all features from the database
     features = Feature.query.all()
     if not features:
@@ -256,6 +272,10 @@ def get_all_features():
     return [{"FeatureID": feature.Trail_FeatureID, "Feature": feature.Trail_Feature} for feature in features], 200
 
 def get_feature_by_id(feature_id):
+    user = require_auth()
+    if not user:
+        abort(401, "Authentication required.")
+
     # Fetch the feature with the given ID
     feature = Feature.query.filter(Feature.Trail_FeatureID == feature_id).one_or_none()
     if not feature:
@@ -284,6 +304,10 @@ def delete_feature_by_id(feature_id):
     return make_response(f"Feature with ID {feature_id} and its associations successfully deleted.", 200)
 
 def get_all_location_points():
+    user = require_auth()
+    if not user:
+        abort(401, "Authentication required.")
+
     # Query all location points
     location_points = LocationPoint.query.all()
 
@@ -355,6 +379,10 @@ def update_location_point(location_point_id):
     return location_point_schema.dump(location_point), 200
 
 def get_point_locations_for_trail(trail_id):
+    user = require_auth()
+    if not user:
+        abort(401, "Authentication required.")
+
     # Check if the trail exists
     trail = Trail.query.filter(Trail.TrailID == trail_id).one_or_none()
     if not trail:
@@ -581,6 +609,10 @@ def delete_location_point_from_trail(trail_id, location_point_id):
     return make_response(f"Location point with ID {location_point_id} successfully removed from trail {trail_id}", 200)
 
 def get_features_for_trail(trail_id):
+    user = require_auth()
+    if not user:
+        abort(401, "Authentication required.")
+
     # Check if the trail exists
     trail = Trail.query.filter(Trail.TrailID == trail_id).one_or_none()
     if not trail:

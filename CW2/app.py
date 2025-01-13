@@ -8,7 +8,7 @@ app = config.app
 
 @app.route("/")
 def home():
-    trails = get_all_trails(details=True)
+    trails = get_all_trails()
 
     return render_template("home.html", trails=trails)
 

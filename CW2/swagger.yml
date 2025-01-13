@@ -12,6 +12,9 @@ paths:
     get:
       summary: Get all trails
       operationId: trails.get_all_trails
+    
+      security:
+        - BasicAuth: []
       parameters:
         - name: details
           in: query
@@ -28,6 +31,8 @@ paths:
                 type: array
                 items:
                   $ref: '#/components/schemas/TrailDetails'
+        '401':
+          description: User not authenticated for detailed view
         '404':
           description: No trails found
     post:
@@ -131,6 +136,8 @@ paths:
     get:
       summary: Get all location points for a specific trail
       operationId: trails.get_point_locations_for_trail
+      security:
+        - BasicAuth: []
       parameters:
         - name: trail_id
           in: path
@@ -267,6 +274,8 @@ paths:
     get:
       summary: Retrieve features for a specific trail
       operationId: trails.get_features_for_trail
+      security:
+        - BasicAuth: []
       parameters:
         - name: trail_id
           in: path
@@ -346,6 +355,8 @@ paths:
     get:
       summary: Get all features
       operationId: trails.get_all_features
+      security:
+        - BasicAuth: []
       responses:
         '200':
           description: List of features
@@ -384,6 +395,8 @@ paths:
     get:
       summary: Get a feature by ID
       operationId: trails.get_feature_by_id
+      security:
+        - BasicAuth: []
       parameters:
         - name: feature_id
           in: path
@@ -457,6 +470,8 @@ paths:
     get:
       summary: Get all location points
       operationId: trails.get_all_location_points
+      security:
+        - BasicAuth: []
       responses:
         '200':
           description: List of location points
@@ -499,6 +514,8 @@ paths:
     get:
       summary: Get a location point by ID
       operationId: trails.get_location_point
+      security:
+        - BasicAuth: []
       parameters:
         - name: location_point_id
           in: path
