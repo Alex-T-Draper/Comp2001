@@ -16,27 +16,11 @@ This project is a microservice designed for managing trails, features, and locat
 
 ## Installation
 
-### Using Docker
+### Using Docker Terminal
 
-1. Clone the repository:
-   ```bash
-   git clone <repository_url>
-   cd <repository_folder>
-   ```
+1. docker pull alextdraper/cw2_atd_docker_image
 
-2. Build and run the Docker containers:
-   ```bash
-   docker-compose up --build
-   ```
-
-3. Access the application:
-   - API: `http://localhost:5000`
-   - Swagger UI: `http://localhost:5000/api/ui`
-
-4. To stop the application:
-   ```bash
-   docker-compose down
-   ```
+2. docker run -p 8000:8000 alextdraper/cw2_atd_docker_image
 
 ### Without Docker
 
@@ -53,8 +37,13 @@ This project is a microservice designed for managing trails, features, and locat
 
 3. Configure the server:
    - Update the database credentials and server information in `config.py` if necessary.
+  
+3. Run authentication.py
+   ```bash
+   python authentication.py
+   ```
 
-4. Run the server:
+5. Run the server:
    ```bash
    python app.py
    ```
