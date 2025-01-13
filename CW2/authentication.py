@@ -38,9 +38,6 @@ def require_auth():
     if not user:
         abort(401, "Authentication required.")
 
-    if user.get("role") not in ("user", "admin"):
-        abort(403, "Must be a user or admin.")
-
     return user
 
 def require_auth_and_role(role="admin"):
