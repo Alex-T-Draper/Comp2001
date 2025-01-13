@@ -116,7 +116,6 @@ Refer to the `swagger.yml` file for more detailed endpoint descriptions and data
 │   ├── models.py
 │   ├── trails.py
 │   ├── swagger.yml
-│   ├── docker-compose.yml
 │   ├── Dockerfile
 │   ├── templates/
 │   │   └── home.html
