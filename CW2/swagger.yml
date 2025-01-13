@@ -25,9 +25,9 @@ paths:
           content:
             application/json:
               schema:
-                type: array
-                items:
-                  $ref: '#/components/schemas/TrailDetails'
+                oneOf:
+                  - $ref: '#/components/schemas/BasicTrailList'
+                  - $ref: '#/components/schemas/TrailDetailsList'
         '401':
           description: User not authenticated for detailed view
         '404':
@@ -728,6 +728,27 @@ components:
           format: date-time
           description: Timestamp of the trail's last update.
 
+    BasicTrail:
+      type: object
+      properties:
+        Trail_name:
+          type: string
+        Trail_Summary:
+          type: string
+        Difficulty:
+          type: string
+        Location:
+          type: string
+        Length:
+          type: string
+          description: Length in km
+        Elevation_gain:
+          type: string
+          description: Elevation gain in meters
+        Route_type:
+          type: string
+          description: Route type
+
     LocationPoint:
       type: object
       properties:
@@ -777,3 +798,12 @@ components:
           type: string
       required:
         - Trail_Feature
+
+    BasicTrailList:
+      type: array
+      items:
+        $ref: '#/components/schemas/BasicTrail'
+    TrailDetailsList:
+      type: array
+      items:
+        $ref: '#/components/schemas/TrailDetails'
