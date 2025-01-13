@@ -37,7 +37,7 @@ def require_auth():
     user = authenticate_user() 
     if not user:
         abort(401, "Authentication required.")
-
+    
     return user
 
 def require_auth_and_role(role="admin"):

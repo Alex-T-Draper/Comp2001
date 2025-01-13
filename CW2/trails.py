@@ -10,24 +10,37 @@ from models import (
 from authentication import require_auth, require_auth_and_role
 
 def get_all_trails():
+    # Check if the 'details' parameter is passed
     details_param = request.args.get('details', 'false').lower() in ('true', '1')
-
-    # If 'details=true', then enforce authentication
-    if details_param:
-        user = require_auth() # Need to be user or admin for detailed view
-        if not user:
-            abort(401, "Authentication required for detailed view.")
 
     # Fetch all trails
     trails = Trail.query.all()
     if not trails:
         abort(404, "No trails found")
 
-    # If details are not requested, return basic trail information
+    # If 'details=false' or not set, return basic trail information
     if not details_param:
-        return trails_schema.dump(trails)
+        return [
+            {
+                "Trail_name": trail.Trail_name,
+                "Trail_Summary": trail.Trail_Summary,
+                "Trail_Description": trail.Trail_Description,
+                "Difficulty": trail.Difficulty,
+                "Location": trail.Location,
+                "Length": trail.Length,
+                "Elevation_gain": trail.Elevation_gain,
+                "Route_type": trail.Route_type,
+            }
+        for trail in trails
+    ]
 
-    # Fetch detailed trail information
+    # Try to authenticate the user
+    try:
+        user = require_auth()
+    except:
+        abort(401, "Authentication required for detailed view.")
+
+    # If authenticated, return full details
     all_trails_with_details = []
 
     for trail in trails:
@@ -49,7 +62,7 @@ def get_all_trails():
                 "Longitude": lp.Longitude,
                 "Description": lp.Description,
                 "Order_no": order_no,
-                "timestamp": lp.timestamp
+                "timestamp": lp.timestamp,
             }
             for lp, order_no in location_points
         ]
@@ -58,7 +71,7 @@ def get_all_trails():
         formatted_features = [
             {
                 "Trail_FeatureID": feature.Trail_FeatureID,
-                "Trail_Feature": feature.Trail_Feature
+                "Trail_Feature": feature.Trail_Feature,
             }
             for feature in features
         ]
@@ -77,12 +90,13 @@ def get_all_trails():
             "OwnerID": trail.OwnerID,
             "Features": formatted_features,
             "LocationPoints": formatted_location_points,
-            "timestamp": trail.timestamp
+            "timestamp": trail.timestamp,
         }
 
         all_trails_with_details.append(formatted_trail)
 
     return all_trails_with_details
+
 
 def create_trail():
     user = require_auth_and_role("admin")  # Ensure only admin users can create trails

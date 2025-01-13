@@ -12,9 +12,6 @@ paths:
     get:
       summary: Get all trails
       operationId: trails.get_all_trails
-    
-      security:
-        - BasicAuth: []
       parameters:
         - name: details
           in: query
