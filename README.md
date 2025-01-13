@@ -18,9 +18,13 @@ This project is a microservice designed for managing trails, features, and locat
 
 ### Using Docker Terminal
 
-1. docker pull alextdraper/cw2_atd_docker_image
+1. ```bash
+   docker pull alextdraper/cw2_atd_docker_image
+   ```
 
-2. docker run -p 8000:8000 alextdraper/cw2_atd_docker_image
+3. ```bash
+   docker run -p 8000:8000 alextdraper/cw2_atd_docker_image
+   ```
 
 ### Without Docker
 
