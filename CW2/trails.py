@@ -209,6 +209,10 @@ def create_trail():
     return response_data, 201
 
 def get_one_trail(trail_id):
+    user = require_auth()
+    if not user:
+        abort(401, "Authentication required.")
+        
     trail = Trail.query.filter(Trail.TrailID == trail_id).one_or_none()
     if trail is not None:
         return trail_schema.dump(trail)

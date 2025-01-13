@@ -64,6 +64,8 @@ paths:
     get:
       summary: Get a single trail by ID
       operationId: trails.get_one_trail
+      security:
+        - BasicAuth: []
       parameters:
         - name: trail_id
           in: path
