@@ -10,10 +10,6 @@ This project is a microservice designed for managing trails, features, and locat
 - Implements RESTful principles and outputs data in JSON format.
 - Includes a Swagger-based API documentation for easy interface representation.
 
-## Prerequisites
-1. **Docker** and **Docker Compose**
-2. Access to the **Trail Authenticator API**
-
 ## Installation
 
 ### Using Docker Terminal
