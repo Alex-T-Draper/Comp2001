@@ -67,8 +67,8 @@ The following key endpoints are provided:
 
 1. **Trails**
    - `GET /trails`: Fetch all basic trail details.
-   - `GET /trails/details`: Fetch all trails with details.
    - `POST /trails`: Create a new trail (Admin only).
+   - `GET /trails/details`: Fetch all trails with details.
    - `GET /trails/{trail_id}`: Retrieve details of a specific trail.
    - `PUT /trails/{trail_id}`: Update a trail (Admin only).
    - `DELETE /trails/{trail_id}`: Delete a trail (Admin only).
