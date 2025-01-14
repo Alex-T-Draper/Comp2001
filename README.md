@@ -18,8 +18,13 @@ This project is a microservice designed for managing trails, features, and locat
    docker pull alextdraper/cw2_atd_docker_image
    ```
 
-3. ```bash
+2. ```bash
    docker run -p 8000:8000 alextdraper/cw2_atd_docker_image
+   ```
+
+3. Access the swagger UI
+   ```bash
+   http://localhost:8000/api/ui/#/
    ```
 
 ### Without Docker
@@ -46,6 +51,11 @@ This project is a microservice designed for managing trails, features, and locat
 5. Run the server:
    ```bash
    python app.py
+   ```
+
+6. Access the swagger UI
+   ```bash
+   http://localhost:8000/api/ui/#/
    ```
 
 ## API Documentation
