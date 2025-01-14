@@ -27,6 +27,7 @@ This project is a microservice designed for managing trails, features, and locat
    ```
 
 5. Access the Swagger UI
+   - Refer to the authentication.py script for preconfigured accounts
    - Once the container is running, you can access the endpoints on Swagger UI in your browser at:
    ```bash
    http://localhost:8000/api/ui/#/
