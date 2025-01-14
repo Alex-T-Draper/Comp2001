@@ -27,7 +27,7 @@ This project is a microservice designed for managing trails, features, and locat
    ```
 
 5. Access the Swagger UI
-   - Once the container is running, you can access the Swagger UI in your browser at:
+   - Once the container is running, you can access the endpoints on Swagger UI in your browser at:
    ```bash
    http://localhost:8000/api/ui/#/
    ```
