@@ -14,15 +14,20 @@ This project is a microservice designed for managing trails, features, and locat
 
 ### Using Docker Terminal
 
-1. ```bash
+1. Pull the Docker Image
+   - Run the following command to pull the Docker image:  
+   ```bash
    docker pull alextdraper/cw2_atd_docker_image
    ```
 
-2. ```bash
+3. Start the Docker Container
+   - Start the Docker container and map port 8000:  
+   ```bash
    docker run -p 8000:8000 alextdraper/cw2_atd_docker_image
    ```
 
-3. Access the swagger UI
+5. Access the Swagger UI
+   - Once the container is running, you can access the Swagger UI in your browser at:
    ```bash
    http://localhost:8000/api/ui/#/
    ```
@@ -43,7 +48,7 @@ This project is a microservice designed for managing trails, features, and locat
 3. Configure the server:
    - Update the database credentials and server information in `config.py` if necessary.
   
-3. Run authentication.py
+4. Run authentication.py
    ```bash
    python authentication.py
    ```
